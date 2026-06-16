@@ -1,5 +1,9 @@
 # LuusOS
 
+![OSDev](https://img.shields.io/badge/topic-osdev-blue)
+![AArch64](https://img.shields.io/badge/arch-aarch64-green)
+![BareMetal](https://img.shields.io/badge/mode-bare--metal-orange)
+
 LuusOS is a hobbyist operating system kernel designed for the **AArch64 (ARM64)** architecture. This project focuses on bare-metal system programming, hardware initialization, and the development of essential kernel drivers from scratch.
 
 ## Features
@@ -14,16 +18,16 @@ To build LuusOS, you need the following tools installed:
 
 ## How to Build
 1. Clone the repository:
-   ```bash
+```bash
    git clone [https://github.com/luispolis124/LuusOS.git](https://github.com/luispolis124/LuusOS.git)
    cd LuusOS
 
 ```
  2. Compile the project:
-   ```bash
+```bash
    make
-   
-   ```
+
+```
 This will generate target/LuusOS.bin and other artifacts in the target/ directory.
 ## Running the OS
 You can test LuusOS using different emulation environments:
