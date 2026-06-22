@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuusOS - Operating System & Documentation</title>
+    <style>
+        /* --- Variáveis e Paleta Dark --- */
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: #161b22;
+            --accent-color: #58a6ff;
+            --text-color: #c9d1d9;
+            --text-dim: #8b949e;
+            --terminal-green: #7ee787;
+            --border-color: #30363d;
+            --code-bg: #0a0e14;
+        }
+
+        /* --- Reset e Configurações Globais --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* --- Header / Navbar --- */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 101;
+        }
+
+        .nav-left-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Menu Hamburguer (Mobile apenas) */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .navbar h1 {
+            font-size: 1.4rem;
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+
+        .navbar h1 span {
+            color: var(--accent-color);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Seletor de Idioma */
+        .lang-switcher {
+            background-color: #21262d;
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            outline: none;
+        }
+
+        .lang-switcher:hover {
+            border-color: var(--text-dim);
+        }
+
+        /* --- Estrutura Principal --- */
+        .wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* --- Barra Lateral --- */
+        .sidebar {
+            background-color: #12161c;
+            border-right: 1px solid var(--border-color);
+            padding: 25px;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            margin-top: 20px;
+        }
+
+        .sidebar h3:first-of-type { margin-top: 0; }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar ul li {
+            margin-bottom: 8px;
+        }
+
+        .sidebar ul li a {
+            color: var(--text-color);
+            font-size: 0.95rem;
+            display: block;
+            padding: 4px 0;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+
+        .sidebar ul li a:hover, .sidebar ul li a.active {
+            color: var(--accent-color);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        /* --- Área de Conteúdo --- */
+        .content {
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .doc-section {
+            display: none;
+        }
+
+        .doc-section.active {
+            display: block;
+        }
+
+        /* Controle de Idioma Nativo por CSS */
+        [lang="en"] { display: none; }
+
+        h2 {
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        /* --- Blocos de Código e Terminal --- */
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+            color: #e6edf3;
+        }
+
+        .keyword { color: #ff7b72; }
+        .function { color: #d2a6ff; }
+        .comment { color: #8b949e; font-style: italic; }
+        .string { color: #a5d6ff; }
+        .number { color: #79c0ff; }
+
+        /* --- Painel de Status Interativo --- */
+        .terminal {
+            background-color: #000;
+            border-radius: 6px;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .terminal-header {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot-red { background-color: #ff5f56; }
+        .dot-yellow { background-color: #ffbd2e; }
+        .dot-green { background-color: #27c93f; }
+
+        .terminal-body {
+            color: var(--terminal-green);
+            font-size: 0.85rem;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .command { color: #fff; }
+
+        .btn-build {
+            background-color: #238636;
+            color: #fff;
+            border: 1px solid rgba(240,246,252,0.1);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-build:hover { background-color: #2ea043; }
+
+        /* --- Tabelas de Info --- */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th, table td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+
+        table th {
+            background-color: var(--panel-bg);
+            color: #fff;
+        }
+
+        /* --- Rodapé --- */
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding: 20px;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            background-color: var(--bg-color);
+        }
+
+        /* --- REGRAS DE RESPONSIVIDADE (MOBILE) --- */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 15px;
+            }
+            .menu-toggle {
+                display: block; /* Revela o hambúguer */
+            }
+            .github-text {
+                display: none; /* Oculta texto "GitHub" para economizar espaço no topo */
+            }
+            .wrapper {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 60px;
+                height: calc(100vh - 60px);
+                width: 280px;
+                z-index: 99;
+                transform: translateX(-100%); /* Escondido por padrão */
+                border-right: 1px solid var(--border-color);
+            }
+            .sidebar.open {
+                transform: translateX(0); /* Desliza para dentro */
+            }
+            .content {
+                padding: 20px;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left-wrapper">
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu">☰</button>
+            <h1>&gt; Luus<span>OS</span> Docs</h1>
+        </div>
+        <div class="nav-right">
+            <select class="lang-switcher" id="langSelect">
+                <option value="pt">🇧🇷 Português</option>
+                <option value="en">🇺🇸 English</option>
+            </select>
+            
+            <a href="https://github.com/luispolis124/LuusOS" target="_blank" style="display: flex; align-items: center; gap: 8px; color: #fff;">
+                <svg height="24" width="24" viewBox="0 0 16 16" fill="currentColor" style="color: #fff;"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82A7.423 7.423 0 0 0 8 4c-.68 0-1.36.09-2 .28-1.52-1.04-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
+                <span class="github-text">GitHub</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="wrapper">
+        
+        <aside class="sidebar" id="sidebar">
+            <h3 class="lang-text" data-pt="Começando" data-en="Getting Started">Começando</h3>
+            <ul>
+                <li><a onclick="handleNav('visao-geral')" id="link-visao-geral" class="active class-lang-nav" data-pt="Visão Geral" data-en="Overview">Visão Geral</a></li>
+                <li><a onclick="handleNav('arquitetura')" id="link-arquitetura" class="class-lang-nav" data-pt="Arquitetura" data-en="Architecture">Arquitetura</a></li>
+                <li><a onclick="handleNav('compilacao')" id="link-compilacao" class="class-lang-nav" data-pt="Compilação & Build" data-en="Compilation & Build">Compilação & Build</a></li>
+            </ul>
+
+            <h3 class="lang-text" data-pt="Kernel Space" data-en="Kernel Space">Kernel Space</h3>
+            <ul>
+                <li><a onclick="handleNav('vga-driver')" id="link-vga-driver" class="class-lang-nav" data-pt="Driver de Vídeo VGA" data-en="VGA Video Driver">Driver de Vídeo VGA</a></li>
+                <li><a onclick="handleNav('gdt-section')" id="link-gdt-section" class="class-lang-nav" data-pt="Estrutura da GDT" data-en="GDT Structure">Estrutura da GDT</a></li>
+                <li><a onclick="handleNav('memoria')" id="link-memoria" class="class-lang-nav" data-pt="Gerenciamento de Memória" data-en="Memory Management">Gerenciamento de Memória</a></li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            
+            <section id="visao-geral" class="doc-section active">
+                <div lang="pt">
+                    <h2>Visão Geral do LuusOS</h2>
+                    <p>O <strong>LuusOS</strong> é um projeto independente de desenvolvimento de sistemas operacionais (OSDev) focado em arquiteturas x86 e desenvolvimento de baixo nível. O principal objetivo é o entendimento e a implementação de estruturas de kernel fundamentais partindo do zero.</p>
+                    <p>O ambiente operacional atual realiza o boot de modo protegido e interage diretamente com o hardware sem camadas intermediárias.</p>
+                </div>
+                <div lang="en">
+                    <h2>LuusOS Overview</h2>
+                    <p><strong>LuusOS</strong> is an independent operating system development (OSDev) project focused on x86 architectures and low-level development. The main goal is to understand and implement fundamental kernel structures from scratch.</p>
+                    <p>The current operating environment boots into protected mode and interacts directly with the hardware without any intermediary layers.</p>
+                </div>
+
+                <h3 class="lang-text" data-pt="Especificações do Projeto" data-en="Project Specifications">Especificações do Projeto</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="lang-text" data-pt="Componente" data-en="Component">Componente</th>
+                                <th class="lang-text" data-pt="Especificação Técnica" data-en="Technical Specification">Especificação Técnica</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Target Architecture</td><td>x86 / IA-32 (Evoluindo para x86_64)</td></tr>
+                            <tr><td>Core Languages</td><td>C, Assembly (NASM), Rust</td></tr>
+                            <tr>
+                                <td class="lang-text" data-pt="Bootloader" data-en="Bootloader">Bootloader</td>
+                                <td class="lang-text" data-pt="Suporte a GRUB / Multiboot padrão" data-en="GRUB Support / Standard Multiboot specification">Suporte a GRUB / Multiboot de especificação padrão</td>
+                            </tr>
+                            <tr>
+                                <td class="lang-text" data-pt="Modo de Saída" data-en="Output Mode">Modo de Saída</td>
+                                <td>VGA Standard text mode (80x25)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="arquitetura" class="doc-section">
+                <div lang="pt">
+                    <h2>Arquitetura do Kernel</h2>
+                    <p>O design do LuusOS segue a filosofia de um kernel monolítico modularizado, dividindo-se entre o código de setup em Assembly e a lógica de controle principal escrita em C estruturado de alta performance.</p>
+                </div>
+                <div lang="en">
+                    <h2>Kernel Architecture</h2>
+                    <p>The LuusOS design follows the philosophy of a modularized monolithic kernel, split between Assembly setup code and core control logic written in highly performant structured C.</p>
+                </div>
+                <pre><span class="comment">; Typical LuusOS boot structure</span>
+<span class="keyword">global</span> _start
+<span class="keyword">extern</span> kernel_main
+
+<span class="function">_start:</span>
+    <span class="keyword">cli</span>                  <span class="comment">; Disable hardware interrupts</span>
+    <span class="keyword">mov</span> <span class="keyword">esp</span>, stack_space <span class="comment">; Set up stack pointer</span>
+    <span class="keyword">call</span> kernel_main     <span class="comment">; Jump to C code</span>
+    <span class="keyword">hlt</span>                  <span class="comment">; Halt CPU if kernel returns</span></pre>
+            </section>
+
+            <section id="compilacao" class="doc-section">
+                <div lang="pt">
+                    <h2>Compilação & Ambiente de Execução</h2>
+                    <p>Abaixo você pode monitorar e simular em tempo de execução o comportamento do buildsystem baseado em <code>Makefile</code> gerando as imagens ISO estruturadas.</p>
+                </div>
+                <div lang="en">
+                    <h2>Compilation & Runtime Environment</h2>
+                    <p>Below you can monitor and simulate at runtime the behavior of our <code>Makefile</code>-based build system generating structured ISO images.</p>
+                </div>
+                
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <div class="dot dot-red"></div>
+                        <div class="dot dot-yellow"></div>
+                        <div class="dot dot-green"></div>
+                    </div>
+                    <div class="terminal-body" id="terminal-output">
+                        <div class="terminal-line"><span class="command">luusos --boot-status</span></div>
+                        <div class="terminal-line" id="term-initial-text">[ OK ] Ambiente pronto para simulação.</div>
+                    </div>
+                </div>
+                <button class="btn-build lang-text" id="btn-build" data-pt="⚡ Executar Simulação de Build" data-en="⚡ Run Build Simulation">⚡ Executar Simulação de Build</button>
+            </section>
+
+            <section id="vga-driver" class="doc-section">
+                <div lang="pt">
+                    <h2>Driver de Vídeo VGA (Modo Texto)</h2>
+                    <p>Abaixo está o modelo de escrita direta na memória de vídeo mapeada em <code>0xB8000</code>. O buffer de texto aceita caracteres acompanhados de bytes de atributos (cores de fundo e primeiro plano).</p>
+                </div>
+                <div lang="en">
+                    <h2>VGA Video Driver (Text Mode)</h2>
+                    <p>Below is the standard direct write model into the video memory mapped at <code>0xB8000</code>. The text buffer accepts characters paired with attribute bytes (background and foreground colors).</p>
+                </div>
+                <pre><span class="comment">// Direct write driver into VGA video buffer</span>
+<span class="keyword">void</span> <span class="function">vga_print_string</span>(<span class="keyword">const char</span>* str, <span class="keyword">char</span> color) {
+    <span class="keyword">volatile char</span>* vga_buffer = (<span class="keyword">volatile char</span>*)<span class="number">0xB8000</span>;
+    <span class="keyword">while</span> (*str != <span class="number">0</span>) {
+        *vga_buffer++ = *str++; <span class="comment">// Send character</span>
+        *vga_buffer++ = color;  <span class="comment">// Send color attribute byte</span>
+    }
+}</pre>
+            </section>
+
+            <section id="gdt-section" class="doc-section">
+                <div lang="pt">
+                    <h2>Global Descriptor Table (GDT)</h2>
+                    <p>A GDT define as características dos segmentos de memória do sistema. O LuusOS configura os seletores de segmento de modo plano (Flat Model), segmentando código e dados do Kernel com privilégio máximo (Ring 0).</p>
+                </div>
+                <div lang="en">
+                    <h2>Global Descriptor Table (GDT)</h2>
+                    <p>The GDT defines the characteristics of the system's memory segments. LuusOS configures segment selectors using a Flat Model, partitioning Kernel code and data with maximum privilege (Ring 0).</p>
+                </div>
+            </section>
+
+            <section id="memoria" class="doc-section">
+                <div lang="pt">
+                    <h2>Gerenciamento de Memória</h2>
+                    <p>Atualmente em fase de pesquisa e engenharia activa, o módulo implementa tabelas de paginação iniciais visando mapear o espaço de endereço virtual para o físico de forma estável, isolando os futuros processos isolados.</p>
+                </div>
+                <div lang="en">
+                    <h2>Memory Management</h2>
+                    <p>Currently undergoing active research and engineering, this module implements early paging tables aiming to map virtual to physical address spaces stably, isolating future tasks.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer>
+        <p id="footer-text">&copy; 2026 LuusOS Project. Documentação técnica gerada automaticamente via Github Pages.</p>
+    </footer>
+
+    <script>
+        let currentLang = 'pt';
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menuToggle');
+
+        // Toggle do Menu Hamburguer (Mobile)
+        menuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('open');
+        });
+
+        // Alterna seções da documentação e fecha a barra lateral no mobile após o clique
+        function handleNav(sectionId) {
+            showSection(sectionId);
+            sidebar.classList.remove('open'); // Fecha o menu se estiver no mobile
+        }
+
+        function showSection(sectionId) {
+            const sections = document.querySelectorAll('.doc-section');
+            sections.forEach(sec => sec.classList.remove('active'));
+
+            const links = document.querySelectorAll('.sidebar ul li a');
+            links.forEach(link => link.classList.remove('active'));
+
+            document.getElementById(sectionId).classList.add('active');
+            document.getElementById('link-' + sectionId).classList.add('active');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Sistema de Controle de Idiomas
+        document.getElementById('langSelect').addEventListener('change', function(e) {
+            currentLang = e.target.value;
+            
+            const ptBlocks = document.querySelectorAll('[lang="pt"]');
+            const enBlocks = document.querySelectorAll('[lang="en"]');
+            
+            if (currentLang === 'en') {
+                ptBlocks.forEach(el => el.style.display = 'none');
+                enBlocks.forEach(el => el.style.display = 'block');
+            } else {
+                ptBlocks.forEach(el => el.style.display = 'block');
+                enBlocks.forEach(el => el.style.display = 'none');
+            }
+
+            document.querySelectorAll('.lang-text').forEach(el => {
+                el.innerText = el.getAttribute('data-' + currentLang);
+            });
+
+            document.querySelectorAll('.class-lang-nav').forEach(el => {
+                el.innerText = el.getAttribute('data-' + currentLang);
+            });
+
+            const footer = document.getElementById('footer-text');
+            const termInitial = document.getElementById('term-initial-text');
+            if (currentLang === 'en') {
+                footer.innerHTML = "&copy; 2026 LuusOS Project. Technical documentation automatically generated via GitHub Pages.";
+                if(termInitial) termInitial.innerText = "[ OK ] Environment ready for simulation.";
+            } else {
+                footer.innerHTML = "&copy; 2026 LuusOS Project. Documentação técnica gerada automaticamente via Github Pages.";
+                if(termInitial) termInitial.innerText = "[ OK ] Ambiente pronto para simulação.";
+            }
+        });
+
+        // Script da simulação de Build do Terminal
+        document.getElementById('btn-build').addEventListener('click', function() {
+            const output = document.getElementById('terminal-output');
+            output.innerHTML = ""; 
+            
+            const msgClean = currentLang === 'en' ? "Removing old objects from src/..." : "Removendo objetos antigos de src/...";
+            const msgCheck = currentLang === 'en' ? "[STATUS] Checking Multiboot integrity..." : "[STATUS] Verificando integridade Multiboot...";
+            const msgGrub = currentLang === 'en' ? "Creating ISO image with grub-mkrescue..." : "Criando imagem ISO com grub-mkrescue...";
+            const msgSuccess = currentLang === 'en' ? "[SUCCESS] build/luusos.iso successfully generated!" : "[SUCCESS] build/luusos.iso gerada com sucesso!";
+
+            const novasLinhas = [
+                "<span style='color: #fff;'>$ make clean && make all</span>",
+                msgClean,
+                "nasm -f elf32 src/boot/boot.asm -o obj/boot.o",
+                "gcc -m32 -c src/kernel/vga.c -o obj/vga.o -std=gnu99 -ffreestanding -O2",
+                "ld -m elf_i386 -T src/linker.ld obj/boot.o obj/vga.o -o build/luusos.bin",
+                `<span style='color: #eac54f;'>${msgCheck}</span>`,
+                "grub-file --is-x86-multiboot build/luusos.bin",
+                msgGrub,
+                `<span style='color: #7ee787;'>${msgSuccess}</span>`,
+                "<span style='color: #58a6ff;'>$ qemu-system-i386 -cdrom build/luusos.iso</span>"
+            ];
+
+            novasLinhas.forEach((linha, index) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.style.marginBottom = "6px";
+                    div.innerHTML = linha;
+                    output.appendChild(div);
+                    output.scrollTop = output.scrollHeight;
+                }, index * 350);
+            });
+        });
+    </script>
+</body>
+</html>
