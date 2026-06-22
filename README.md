@@ -1,6 +1,6 @@
 # 🪐 LuusOS — Bare-Metal Operating System
 [![Architecture](https://img.shields.io/badge/arch-AArch64%20%2F%20x86-blueviolet?style=for-the-badge)](https://github.com/luispolis124/LuusOS)
-[![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE.md)
 [![Environment](https://img.shields.io/badge/environment-Bare--Metal-orange?style=for-the-badge)](https://github.com/luispolis124/LuusOS)
 ---
 ## 🇧🇷 Português
@@ -21,11 +21,16 @@ O ecossistema é modularizado de modo flat e híbrido, suportando implementaçõ
 | **Core Compilers** | GCC / Clang / LLVM / NASM | Cross-compilação e linkagem estrita sem dependências da `stdlib`. |
 
 ### 🛠️ Pré-requisitos & Instalação da Toolchain
-Para compilar o LuusOS do código-fonte, garanta que seu ambiente possua as seguintes ferramentas instaladas:
+#### Linux / Termux (Android)
 ```bash
-# No Ubuntu/Debian/Termux
 sudo apt update
 sudo apt install build-essential nasm qemu-system-x86 qemu-system-arm xorriso grub-pc-bin cimg-dev clang lld
+```
+#### Windows (WSL2 ou MSYS2)
+ * **Opção 1 (Recomendado - WSL2 com Ubuntu):** Instale o WSL2 no prompt de comando (wsl --install), abra a distribuição Linux instalada e execute o comando clássico do Linux acima.
+ * **Opção 2 (Nativo via MSYS2):** Abra o terminal do MSYS2 (UCRT64) e instale o pacote de ferramentas nativo:
+```bash
+  pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-qemu xorriso
 ```
 ### 🏗️ Compilação & Build System
  1. **Clone o repositório:**
@@ -38,7 +43,7 @@ sudo apt install build-essential nasm qemu-system-x86 qemu-system-arm xorriso gr
    make clean && make all
 ```
 ### 🕹️ Execução & Emulação
-#### 1. Via QEMU (Recomendado para Testes Rápidos)
+#### 1. Via QEMU (Linux, Windows e Termux)
  * **Executando em x86 (Modo Padrão):**
 ```bash
   # Testando a ISO estável gerada pelo build system
@@ -50,15 +55,20 @@ sudo apt install build-essential nasm qemu-system-x86 qemu-system-arm xorriso gr
 ```bash
   qemu-system-aarch64 -M virt -cpu cortex-a57 -nographic -kernel target/LuusOS.bin
 ```
-#### 2. Via VirtualBox (Ambiente de Virtualização Completo)
-Para rodar a imagem do LuusOS no VirtualBox, siga os passos abaixo:
+#### 2. Via Limbo PC Emulator (Mobile / Android)
+Para executar o LuusOS no seu celular usando o Limbo:
+ 1. Copie o arquivo gerado build/luusos.iso ou build/luusos.bin para o armazenamento do seu dispositivo móvel.
+ 2. Abra o **Limbo PC Emulator**, crie uma nova máquina virtual e configure a arquitetura para **x86** (ou arm64 dependendo da build).
+ 3. Na aba **Removable Drives**, habilite a opção **CDROM** e selecione o arquivo luusos.iso (ou configure como **Kernel** caso use o .bin direto).
+ 4. Defina a interface de vídeo como **std** ou **vmware** e clique em **Play/Iniciar**.
+#### 3. Via VirtualBox (Ambiente de Virtualização Completo)
  1. Certifique-se de que o arquivo build/luusos.iso foi gerado com sucesso pelo make.
- 2. Abra o VirtualBox e crie uma nova máquina virtual (Escolha o tipo *Other* / *Other/Unknown* 32-bit ou 64-bit dependendo do alvo atual de build).
- 3. Vá em **Configurações > Armazenamento**, selecione a controladora IDE/Dispositivo Óptico e anexe o luusos.iso como um drive de CD virtual.
- 4. Garanta que a ordem de boot esteja configurada para iniciar pelo drive óptico. (*Nota: Certifique-se de habilitar ou desabilitar o EFI nas configurações do sistema conforme o estado da build do seu bootloader*).
- 5. Inicie a máquina virtual.
-#### 3. Gravando em um Pendrive (Bare-Metal Real)
+ 2. Abra o VirtualBox e crie uma nova máquina virtual (Escolha o tipo *Other* / *Other/Unknown*).
+ 3. Vá em **Configurações > Armazenamento**, selecione o dispositivo óptico e anexe o luusos.iso.
+ 4. Garanta que a ordem de boot esteja configurada para iniciar pelo drive óptico e inicie a máquina.
+#### 4. Gravando em um Pendrive (Bare-Metal Real)
 ```bash
+# Linux / WSL2
 sudo dd if=build/luusos.iso of=/dev/sdX bs=4M && sync
 ```
 ## 🇺🇸 English
@@ -79,11 +89,16 @@ The ecosystem features a modular flat and hybrid structure, targeting robust low
 | **Core Compilers** | GCC / Clang / LLVM / NASM | Freestanding cross-compilation with no stdlib links. |
 
 ### 🛠️ Prerequisites & Toolchain Setup
-To build LuusOS from source, ensure you have the following packages installed:
+#### Linux / Termux (Android)
 ```bash
-# On Ubuntu/Debian/Termux environments
 sudo apt update
 sudo apt install build-essential nasm qemu-system-x86 qemu-system-arm xorriso grub-pc-bin cimg-dev clang lld
+```
+#### Windows (WSL2 or MSYS2)
+ * **Option 1 (Recommended - WSL2 with Ubuntu):** Install WSL2 from your terminal (wsl --install), log into your Linux instance and run the native Linux setup snippet above.
+ * **Option 2 (Native via MSYS2):** Open your MSYS2 terminal (UCRT64) and fetch the freestanding compilation toolchain:
+```bash
+  pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-qemu xorriso
 ```
 ### 🏗️ Compilation & Build System
  1. **Clone the repository:**
@@ -96,7 +111,7 @@ sudo apt install build-essential nasm qemu-system-x86 qemu-system-arm xorriso gr
    make clean && make all
 ```
 ### 🕹️ Running & Emulation
-#### 1. Via QEMU (Recommended for Quick Testing)
+#### 1. Via QEMU (Linux, Windows, and Termux)
  * **Running on x86 (Standard Mode):**
 ```bash
   # Testing the stable ISO image generated by the build system
@@ -108,15 +123,20 @@ sudo apt install build-essential nasm qemu-system-x86 qemu-system-arm xorriso gr
 ```bash
   qemu-system-aarch64 -M virt -cpu cortex-a57 -nographic -kernel target/LuusOS.bin
 ```
-#### 2. Via VirtualBox (Full VM Virtualization)
-To test LuusOS inside VirtualBox, follow these setup rules:
+#### 2. Via Limbo PC Emulator (Mobile / Android)
+To test LuusOS directly on an Android device using Limbo:
+ 1. Move the compiled build/luusos.iso or build/luusos.bin onto your target phone storage.
+ 2. Launch **Limbo PC Emulator**, spin up a new machine, and map architecture properties to **x86** (or arm64).
+ 3. Inside the **Removable Drives** section, toggle **CDROM** and load your luusos.iso file (or provide it inside the **Kernel** fields if using raw standalone binaries).
+ 4. Select your Video Display Interface (e.g., **std** or **vmware**) and hit the **Play** button.
+#### 3. Via VirtualBox (Full VM Virtualization)
  1. Ensure build/luusos.iso was successfully compiled using make.
- 2. Open VirtualBox and create a new Virtual Machine (Set OS Type to *Other* / *Other/Unknown* 32-bit or 64-bit depending on your compilation target).
- 3. Open **Settings > Storage**, choose the IDE Controller / Optical Device, and attach your local luusos.iso file.
- 4. Verify that the system's Boot Order gives priority to the optical drive. (*Note: Toggle EFI support on or off in the Motherboard configuration panel based on your bootloader structure*).
- 5. Start the virtual machine.
-#### 3. Flashing to a USB Drive (Bare-Metal Deployment)
+ 2. Open VirtualBox and create a new Virtual Machine (Set OS Type to *Other* / *Other/Unknown*).
+ 3. Open **Settings > Storage**, choose the Optical Device, and attach your local luusos.iso file.
+ 4. Verify Boot Priority settings and start up the instance.
+#### 4. Flashing to a USB Drive (Bare-Metal Deployment)
 ```bash
+# Linux / WSL2 environments
 sudo dd if=build/luusos.iso of=/dev/sdX bs=4M && sync
 ```
 ## 📦 🇧🇷 Download Rápido / 🇺🇸 Quick Download (Via Releases)
