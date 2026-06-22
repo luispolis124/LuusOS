@@ -1,4 +1,3 @@
-```markdown
 # 🪐 LuusOS — Bare-Metal Operating System
 [![Architecture](https://img.shields.io/badge/arch-AArch64%20%2F%20x86-blueviolet?style=for-the-badge)](https://github.com/luispolis124/LuusOS)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
@@ -135,5 +134,3 @@ wget [https://github.com/luispolis124/LuusOS/releases/latest/download/luusos.bin
 ```
 ## 📜 License & Contributing
 Licensed under the **MIT License**. Feel free to study, modify, fork, and use this codebase for educational and OSDev experimentation purposes. Feedback, issue tracking, and architecture discussions are highly appreciated!
-```
-```
