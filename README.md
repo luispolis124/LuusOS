@@ -2,6 +2,7 @@
 <p align="center">
   <img src="banner.png" alt="LuusOS Banner" width="100%">
 </p>
+
 [![Architecture](https://img.shields.io/badge/arch-AArch64%20%2F%20x86-blueviolet?style=for-the-badge)](https://github.com/luispolis124/LuusOS)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE.md)
 [![Environment](https://img.shields.io/badge/environment-Bare--Metal-orange?style=for-the-badge)](https://github.com/luispolis124/LuusOS)
