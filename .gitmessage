@@ -1,0 +1,7 @@
+[Subsistema] Título curto e direto (máx 50 caracteres)
+
+# Por que essa alteração é necessária?
+# O que foi modificado no baixo nível (Kernel, GDT, VGA, Assembly)?
+
+# Exemplos de Subsistemas: Boot, VGA, GDT, Memory, Makefile, Docs
+
