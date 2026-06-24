@@ -1,0 +1,15 @@
+# Força finais de linha padrão Linux para códigos e scripts
+* text=auto eol=lf
+
+*.c text
+*.h text
+*.rs text
+*.asm text
+*.sh text
+*.bash text
+Makefile text
+
+# Garante que arquivos binários ou ISOs não sejam corrompidos pelo Git
+*.bin binary
+*.iso binary
+*.img binary
