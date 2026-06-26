@@ -68,3 +68,13 @@ dkms.conf
 /bin/
 /downloads/
 .DS_Store
+
+# Bloqueio de Arquivos Compactados e Pacotes de Terceiros
+*.zip
+*.tar.gz
+*.tar
+*.tgz
+*.rar
+*.7z
+*.iso
+*.bin
