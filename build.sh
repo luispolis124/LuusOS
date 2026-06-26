@@ -1,61 +1,147 @@
 #!/bin/bash
 
-# Exit immediately if a command exits with a non-zero status.
+# Aborta o script imediatamente se qualquer comando falhar
 set -e
 
-# Define variables
-# If you have a specific cross-compiler prefix, set it here (e.g., i686-elf-)
-# If you are on a standard Linux distro and have the native compiler (though not recommended for bare metal),
-# you might use no prefix or set CC=gcc. For OSDev, i686-elf-gcc is highly recommended.
-CC="gcc -m32"
-AS="as --32"
+echo "============================================================"
+echo "  LuusOS Build System — Linux / Termux (Android)"
+echo "============================================================"
+echo ""
 
-echo "Checking for cross-compiler..."
-if ! command -v gcc &> /dev/null; then
-    echo "Warning: $CC could not be found."
-    echo "If you don't have a cross-compiler, this build may fail or produce invalid binaries."
-    echo "You can try changing CC='gcc' and AS='as' in this script if you are on Linux,"
-    echo "but it is not recommended for a bare-metal OS."
-    # If on windows, maybe they use x86_64-w64-mingw32-gcc. But let's stick to standard names.
+# 1. DETECÇÃO DE AMBIENTE (TERMUX vs PC NATIVO)
+if [ -d "$HOME/.termux" ] || [ -n "$TERMUX_VERSION" ]; then
+    echo "[INFO] Ambiente Termux detectado no Android."
+    # No Termux, o Clang é o melhor cross-compiler nativo para x86 bare-metal
+    CC="clang -target i686-pc-none-elf"
+    AS="clang -target i686-pc-none-elf"
+    LD="ld.lld"
+    # Flags adicionais para o Clang emular freestanding puro
+    CFLAGS="-ffreestanding -O2 -Wall -Wextra -std=gnu99 -march=i686"
+    LDFLAGS="-T linker.ld -nostdlib -static"
+else
+    echo "[INFO] Ambiente Linux (PC) detectado."
+    
+    # Verifica se a toolchain i686-elf-tools local existe
+    if [ ! -f "bin/i686-elf-gcc" ]; then
+        echo "[INFO] i686-elf-gcc local não encontrado. Baixando toolchain estável..."
+        mkdir -p toolchain_tmp
+        
+        # Puxa a release estável do i686-elf-tools para Linux
+        curl -L -o toolchain_tmp/toolchain.tar.gz "https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-linux.tar.gz" || \
+        wget -O toolchain_tmp/toolchain.tar.gz "https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-linux.tar.gz"
+        
+        mkdir -p bin
+        tar -xzf toolchain_tmp/toolchain.tar.gz -C bin/ --strip-components=1
+        rm -rf toolchain_tmp
+        echo "[OK] Toolchain Linux configurada com sucesso!"
+    fi
+
+    CC="bin/i686-elf-gcc"
+    AS="bin/i686-elf-as"
+    CFLAGS="-c -std=gnu99 -ffreestanding -O2 -Wall -Wextra"
+    LDFLAGS="-T linker.ld -ffreestanding -O2 -nostdlib"
 fi
 
-echo "Assembling boot.s..."
-$AS src/boot.s -o boot.o
+# ============================================================
+#  PASSO 1 — Montagem e Compilação dos Módulos
+# ============================================================
+echo ""
+echo "[1/2] Compilando arquivos de código-fonte..."
 
-echo "Compiling kernel.c..."
-$CC -c src/kernel.c -o kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+# Montagem do boot e rotinas Assembly
+echo "   Montando src/boot.s"
+$AS -c src/boot.s -o boot.o
 
-echo "Linking into luusos.bin..."
-$CC -T linker.ld -o luusos.bin -ffreestanding -O2 -nostdlib boot.o kernel.o -lgcc
+echo "   Montando src/gdt_flush.s"
+$AS -c src/gdt_flush.s -o gdt_flush.o
 
-# Check if the generated file is multiboot compliant
-echo "Checking multiboot header..."
+echo "   Montando src/isr.s"
+$AS -c src/isr.s -o isr.o
+
+# Compilação dos módulos em C do Kernel
+echo "   Compilando src/gdt.c"
+$CC $CFLAGS src/gdt.c -o gdt.o
+
+echo "   Compilando src/idt.c"
+$CC $CFLAGS src/idt.c -o idt.o
+
+echo "   Compilando src/kernel.c"
+$CC $CFLAGS src/kernel.c -o kernel.o
+
+echo "   Compilando src/keyboard.c"
+$CC $CFLAGS src/keyboard.c -o keyboard.o
+
+echo "   Compilando src/string.c"
+$CC $CFLAGS src/string.c -o string.o
+
+echo "   Compilando src/shell.c"
+$CC $CFLAGS src/shell.c -o shell.o
+
+echo "   Compilando src/sound.c"
+$CC $CFLAGS src/sound.c -o sound.o
+
+echo "   Compilando src/timer.c"
+$CC $CFLAGS src/timer.c -o timer.o
+
+# ============================================================
+#  PASSO 2 — Linkagem do Executável do Kernel
+# ============================================================
+echo ""
+echo "[2/2] Linkando objetos no binário estável luusos.bin..."
+
+if [ -d "$HOME/.termux" ] || [ -n "$TERMUX_VERSION" ]; then
+    # Linkagem específica via LLD no Android Termux
+    $LD $LDFLAGS boot.o gdt_flush.o isr.o gdt.o idt.o kernel.o keyboard.o string.o shell.o sound.o timer.o -o luusos.bin
+else
+    # Linkagem padrão via GCC Cross-Compiler no PC
+    $CC $LDFLAGS -o luusos.bin boot.o gdt_flush.o isr.o gdt.o idt.o kernel.o keyboard.o string.o shell.o sound.o timer.o -lgcc
+fi
+
+echo "[OK] Kernel luusos.bin gerado com sucesso!"
+
+# ============================================================
+#  VERIFICAÇÃO MULTIBOOT
+# ============================================================
+echo ""
+echo "Verificando consistência do Header Multiboot..."
 if command -v grub-file &> /dev/null; then
     if grub-file --is-x86-multiboot luusos.bin; then
-        echo "multiboot confirmed"
+        echo "   -> [Sucesso]: Estrutura Multiboot confirmada!"
     else
-        echo "the file is not multiboot"
+        echo "   -> [Erro]: O binário quebrado não atende à especificação Multiboot."
         exit 1
     fi
 else
-    echo "grub-file not found, skipping multiboot check."
+    echo "   -> 'grub-file' não instalado. Pulando checagem de assinatura."
 fi
 
-# Optional: Generate ISO
-echo "Generating ISO (optional)..."
+# ============================================================
+#  PASSO OPCIONAL — Geração de Imagem ISO de Boot
+# ============================================================
+echo ""
+echo "Gerando imagem ISO óptica (Opcional)..."
 if command -v grub-mkrescue &> /dev/null; then
     mkdir -p isodir/boot/grub
     cp luusos.bin isodir/boot/luusos.bin
     cp grub.cfg isodir/boot/grub/grub.cfg
     grub-mkrescue -o luusos.iso isodir
-    echo "luusos.iso created successfully!"
+    rm -rf isodir
+    echo "[OK] Imagem estável luusos.iso criada com sucesso!"
 else
-    echo "grub-mkrescue not found. Skipping ISO creation."
-    echo "You need GRUB tools installed to create the bootable ISO."
+    echo "   -> 'grub-mkrescue' não encontrado no PATH atual. Pulando geração de ISO."
+    echo "   -> (Para gerar ISOs no Termux, use xorriso, grub-pc-bin ou rode direto via .bin no Limbo/QEMU)."
 fi
 
-echo "Build complete."
-echo "To run with QEMU, you can use:"
-echo "  qemu-system-i386 -kernel luusos.bin"
-echo "Or if you generated the ISO:"
-echo "  qemu-system-i386 -cdrom luusos.iso"
+# Limpeza de arquivos de objeto temporários (.o) do diretório raiz
+rm -f *.o
+
+echo ""
+echo "============================================================"
+echo "  Build finalizado!"
+echo "============================================================"
+echo "Comandos QEMU recomendados para teste:"
+echo "  Apenas Kernel : qemu-system-i386 -kernel luusos.bin"
+if [ -f "luusos.iso" ]; then
+    echo "  Imagem ISO    : qemu-system-i386 -cdrom luusos.iso"
+fi
+echo ""
