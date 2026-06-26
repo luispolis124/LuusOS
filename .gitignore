@@ -1,0 +1,14 @@
+*.o
+*.obj
+*.elf
+*.bin
+*.iso
+*.zip
+*.tar.gz
+/i686-elf/
+/include/
+/lib/
+/libexec/
+/share/
+/src/
+/bin/
