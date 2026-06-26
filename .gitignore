@@ -54,7 +54,16 @@ dkms.conf
 # debug information files
 *.dwo
 
-# Pastas locais de ferramentas e builds baixadas
+# Pastas específicas da Toolchain e Compilador de Terceiros (NÃO SUBIR)
+/toolchain2/
+/i686-elf/
+/include/
+/lib/
+/libexec/
+/share/
+/src/
+
+# Outras pastas locais de ferramentas e builds
 /tools/
 /bin/
 /downloads/
