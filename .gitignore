@@ -10,5 +10,6 @@
 /lib/
 /libexec/
 /share/
-/src/
-/bin/
+/tools/
+/downloads/
+.DS_Store
