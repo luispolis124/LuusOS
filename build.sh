@@ -11,12 +11,12 @@ echo ""
 # 1. DETECÇÃO DE AMBIENTE (TERMUX vs PC NATIVO)
 if [ -d "$HOME/.termux" ] || [ -n "$TERMUX_VERSION" ]; then
     echo "[INFO] Ambiente Termux detectado no Android."
-    # No Termux, o Clang é o melhor cross-compiler nativo para x86 bare-metal
+    # No Termux, o Clang age como cross-compiler nativo para x86 bare-metal
     CC="clang -target i686-pc-none-elf"
     AS="clang -target i686-pc-none-elf"
     LD="ld.lld"
-    # Flags adicionais para o Clang emular freestanding puro
-    CFLAGS="-ffreestanding -O2 -Wall -Wextra -std=gnu99 -march=i686"
+    # O '-c' foi adicionado aqui para garantir compilação pura sem linkagem prematura
+    CFLAGS="-c -ffreestanding -O2 -Wall -Wextra -std=gnu99 -march=i686"
     LDFLAGS="-T linker.ld -nostdlib -static"
 else
     echo "[INFO] Ambiente Linux (PC) detectado."
@@ -90,7 +90,7 @@ echo ""
 echo "[2/2] Linkando objetos no binário estável luusos.bin..."
 
 if [ -d "$HOME/.termux" ] || [ -n "$TERMUX_VERSION" ]; then
-    # Linkagem específica via LLD no Android Termux
+    # Linkagem estável via LLD no Android Termux
     $LD $LDFLAGS boot.o gdt_flush.o isr.o gdt.o idt.o kernel.o keyboard.o string.o shell.o sound.o timer.o -o luusos.bin
 else
     # Linkagem padrão via GCC Cross-Compiler no PC
@@ -122,17 +122,16 @@ echo ""
 echo "Gerando imagem ISO óptica (Opcional)..."
 if command -v grub-mkrescue &> /dev/null; then
     mkdir -p isodir/boot/grub
-    cp luusos.bin isodir/boot/luusos.bin
+    cp luusos.bin isodir/boot/boot.bin
     cp grub.cfg isodir/boot/grub/grub.cfg
     grub-mkrescue -o luusos.iso isodir
     rm -rf isodir
     echo "[OK] Imagem estável luusos.iso criada com sucesso!"
 else
     echo "   -> 'grub-mkrescue' não encontrado no PATH atual. Pulando geração de ISO."
-    echo "   -> (Para gerar ISOs no Termux, use xorriso, grub-pc-bin ou rode direto via .bin no Limbo/QEMU)."
 fi
 
-# Limpeza de arquivos de objeto temporários (.o) do diretório raiz
+# Limpeza automática de arquivos de objeto temporários (.o)
 rm -f *.o
 
 echo ""
