@@ -28,7 +28,7 @@
 *.so.*
 *.dylib
 
-# Executables
+# Executables and Tools (Proteção de Direitos Autorais e Binários)
 *.exe
 *.out
 *.app
@@ -53,3 +53,9 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Pastas locais de ferramentas e builds baixadas
+/tools/
+/bin/
+/downloads/
+.DS_Store
