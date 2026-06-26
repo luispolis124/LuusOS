@@ -2,266 +2,183 @@
 setlocal enabledelayedexpansion
 
 :: ============================================================
-::  LuusOS Build Script (Automated Toolchain Setup)
-::  Usage:
-::    build.bat          -> compile + link -> luusos.bin only
-::    build.bat iso      -> compile + link + create bootable ISO
-::    build.bat img      -> compile + link + create raw disk image
-::    build.bat all      -> compile + link + both ISO and IMG
+::  SELEÇÃO DE IDIOMA / LANGUAGE SELECTION
 :: ============================================================
-
-set CC=bin\i686-elf-gcc.exe
-set AS=bin\i686-elf-as.exe
-set LD=bin\i686-elf-ld.exe
-
+echo Select the build language / Selecione o idioma do build:
+echo  [1] Portugues (BR)
+echo  [2] English (US)
 echo.
-echo ============================================================
-echo  LuusOS Build System
-echo ============================================================
-echo.
+choice /c 12 /n /m "Choose/Escolha (1 or 2): "
 
-:: ============================================================
-::  AUTOMATED STEP — Check and Download Toolchain if missing
-:: ============================================================
-
-if not exist "%CC%" (
-    echo [INFO] Cross-compiler i686-elf-gcc.exe not found locally.
-    echo [INFO] Preparing automated download from official open-source upstream...
-    echo [INFO] Project: i686-elf-tools (by @lordmilko)
-    echo.
-    
-    :: Create toolchain download directory
-    if not exist toolchain_tmp mkdir toolchain_tmp
-    
-    echo [DOWNLOADING] Fetching i686-elf-tools-windows.zip...
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-windows.zip' -OutFile 'toolchain_tmp\toolchain.zip'"
-    
-    if errorlevel 1 (
-        echo [ERROR] PowerShell download failed. Trying fallback bitsadmin...
-        bitsadmin /transfer "LuusOSToolchain" https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-windows.zip %CD%\toolchain_tmp\toolchain.zip >nul
-    )
-    
-    if not exist toolchain_tmp\toolchain.zip (
-        echo [CRITICAL] Failed to download the toolchain architecture automatically.
-        echo Please download manually from: https://github.com/lordmilko/i686-elf-tools
-        echo and extract its contents into the root or 'bin/' directory.
-        pause
-        exit /b 1
-    )
-    
-    echo [EXTRACTING] Unpacking toolchain components into bin/ structure...
-    if not exist bin mkdir bin
-    powershell -Command "Expand-Archive -Path 'toolchain_tmp\toolchain.zip' -DestinationPath 'bin\' -Force"
-    
-    :: Clean up temporary download artifacts
-    rmdir /s /q toolchain_tmp >nul 2>&1
-    
-    echo [OK] Toolchain downloaded and mapped successfully!
-    echo.
+if errorlevel 2 (
+    set LANG=EN
+) else if errorlevel 1 (
+    set LANG=PT
 )
 
-:: Re-verify after download attempt
-if not exist "%CC%" (
-    echo [ERROR] Cross-compiler verification failed. Ensure binaries are mapped to bin\i686-elf-gcc.exe
+cls
+echo ============================================================
+echo   LuusOS Build System — Windows PC (w64devkit)
+echo ============================================================
+echo.
+
+:: Configura os executáveis locais instalados na pasta bin via w64devkit
+set CC="%~dp0bin\gcc.exe" -m32
+set AS="%~dp0bin\as.exe" --32
+set LD="%~dp0bin\ld.exe" -m elf_i386
+
+if not exist "%~dp0bin\gcc.exe" (
+    if "!LANG!"=="PT" (
+        echo [ERRO] Compilador nao encontrado na pasta bin!
+        echo Rode o comando do PowerShell para baixar a toolchain primeiro.
+    ) else (
+        echo [ERROR] Compiler not found in bin folder!
+        echo Run the PowerShell command to download the toolchain first.
+    )
+    echo.
     pause
     exit /b 1
 )
 
-set TARGET=%~1
-if "%TARGET%"=="" set TARGET=bin
+:: Menu Interativo de Seleção de Alvo
+if "!LANG!"=="PT" (
+    echo Escolha o tipo de compilacao desejado:
+    echo  [1] Apenas Kernel (luusos.bin)
+    echo  [2] Kernel + Imagem Optica (luusos.iso)
+    echo.
+    choice /c 12 /n /m "Digite a opcao desejada (1 ou 2): "
+) else (
+    echo Choose the desired build target:
+    echo  [1] Kernel Only (luusos.bin)
+    echo  [2] Kernel + Optical Image (luusos.iso)
+    echo.
+    choice /c 12 /n /m "Enter your choice (1 or 2): "
+)
 
-:: ============================================================
-::  STEP 1 — Compile all C and assembly sources
-:: ============================================================
-
-echo [1/2] Compiling sources...
-
-echo    Assembling src\boot.s
-%AS% src\boot.s -o boot.o
-if errorlevel 1 goto :error
-
-echo    Assembling src\gdt_flush.s
-%AS% src\gdt_flush.s -o gdt_flush.o
-if errorlevel 1 goto :error
-
-echo    Assembling src\isr.s
-%AS% src\isr.s -o isr.o
-if errorlevel 1 goto :error
-
-echo    Compiling src\gdt.c
-%CC% -c src\gdt.c -o gdt.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-if errorlevel 1 goto :error
-
-echo    Compiling src\idt.c
-%CC% -c src\idt.c -o idt.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-if errorlevel 1 goto :error
-
-echo    Compiling src\kernel.c
-%CC% -c src\kernel.c -o kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-if errorlevel 1 goto :error
-
-echo    Compiling src\keyboard.c
-%CC% -c src\keyboard.c -o keyboard.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-if errorlevel 1 goto :error
-
-echo    Compiling src\string.c
-%CC% -c src\string.c -o string.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-if errorlevel 1 goto :error
-
-echo    Compiling src\shell.c
-%CC% -c src\shell.c -o shell.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-if errorlevel 1 goto :error
-
-echo    Compiling src\sound.c
-%CC% -c src\sound.c -o sound.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-if errorlevel 1 goto :error
-
-echo    Compiling src\timer.c
-%CC% -c src\timer.c -o timer.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-if errorlevel 1 goto :error
-
-:: ============================================================
-::  STEP 2 — Link into luusos.bin
-:: ============================================================
+if errorlevel 2 (
+    set TARGET=iso
+) else if errorlevel 1 (
+    set TARGET=bin
+)
 
 echo.
-echo [2/2] Linking luusos.bin...
-%CC% -T linker.ld -o luusos.bin -ffreestanding -O2 -nostdlib ^
-    boot.o gdt_flush.o isr.o gdt.o idt.o kernel.o keyboard.o ^
-    string.o shell.o sound.o timer.o -lgcc
+echo ============================================================
+if "!LANG!"=="PT" (echo [INFO] Alvo selecionado: !TARGET!) else (echo [INFO] Selected target: !TARGET!)
+echo ============================================================
+echo.
+
+:: ============================================================
+::  PASSO 1 — Compilação dos Módulos
+:: ============================================================
+if "!LANG!"=="PT" (echo [1/2] Compilando arquivos de codigo-fonte...) else (echo [1/2] Compiling source files...)
+
+if "!LANG!"=="PT" (echo   Montando src/boot.s) else (echo   Assembling src/boot.s)
+%AS% -c src/boot.s -o boot.o
 if errorlevel 1 goto :error
 
+if "!LANG!"=="PT" (echo   Montando src/gdt_flush.s) else (echo   Assembling src/gdt_flush.s)
+%AS% -c src/gdt_flush.s -o gdt_flush.o
+if errorlevel 1 goto :error
+
+if "!LANG!"=="PT" (echo   Montando src/isr.s) else (echo   Assembling src/isr.s)
+%AS% -c src/isr.s -o isr.o
+if errorlevel 1 goto :error
+
+if "!LANG!"=="PT" (echo   Compilando src/gdt.c) else (echo   Compiling src/gdt.c)
+%CC% -c src/gdt.c -o gdt.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
+if errorlevel 1 goto :error
+
+if "!LANG!"=="PT" (echo   Compilando src/idt.c) else (echo   Compiling src/idt.c)
+%CC% -c src/idt.c -o idt.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
+if errorlevel 1 goto :error
+
+if "!LANG!"=="PT" (echo   Compilando src/kernel.c) else (echo   Compiling src/kernel.c)
+%CC% -c src/kernel.c -o kernel.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
+if errorlevel 1 goto :error
+
+if "!LANG!"=="PT" (echo   Compilando src/keyboard.c) else (echo   Compiling src/keyboard.c)
+%CC% -c src/keyboard.c -o keyboard.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
+if errorlevel 1 goto :error
+
+if "!LANG!"=="PT" (echo   Compilando src/string.c) else (echo   Compiling src/string.c)
+%CC% -c src/string.c -o string.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
+if errorlevel 1 goto :error
+
+if "!LANG!"=="PT" (echo   Compilando src/shell.c) else (echo   Compiling src/shell.c)
+%CC% -c src/shell.c -o shell.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
+if errorlevel 1 goto :error
+
+if "!LANG!"=="PT" (echo   Compilando src/sound.c) else (echo   Compiling src/sound.c)
+%CC% -c src/sound.c -o sound.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
+if errorlevel 1 goto :error
+
+if "!LANG!"=="PT" (echo   Compilando src/timer.c) else (echo   Compiling src/timer.c)
+%CC% -c src/timer.c -o timer.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
+if errorlevel 1 goto :error
+
+:: ============================================================
+::  PASSO 2 — Linkagem do Executável do Kernel
+:: ============================================================
 echo.
-echo [OK] luusos.bin built successfully.
+if "!LANG!"=="PT" (echo [2/2] Linkando objetos no binario estavel luusos.bin...) else (echo [2/2] Linking objects into stable luusos.bin...)
+%LD% -T linker.ld -o luusos.bin boot.o gdt_flush.o isr.o gdt.o idt.o kernel.o keyboard.o string.o shell.o sound.o timer.o
+if errorlevel 1 goto :error
+
+if "!LANG!"=="PT" (echo [OK] Kernel luusos.bin gerado com sucesso!) else (echo [OK] Kernel luusos.bin successfully generated!)
 
 :: ============================================================
-::  OPTIONAL — Generate ISO image
+::  GERAÇÃO DA ISO (SE SELECIONADA)
 :: ============================================================
-
 if /i "%TARGET%"=="iso" goto :make_iso
-if /i "%TARGET%"=="all" goto :make_iso
-goto :check_img
+goto :done
 
 :make_iso
 echo.
-echo [ISO] Building bootable ISO image...
+if "!LANG!"=="PT" (echo [ISO] Verificando ferramentas de geracao de imagem...) else (echo [ISO] Checking image generation tools...)
 
-:: Verify grub-mkrescue is available
 where grub-mkrescue >nul 2>&1
 if errorlevel 1 (
-    echo.
-    echo [WARNING] grub-mkrescue not found in PATH.
-    echo           Install GRUB tools via one of:
-    echo             - MSYS2:  pacman -S grub
-    echo             - WSL:    sudo apt install grub-pc-bin xorriso mtools
-    echo           Then add the bin to your Windows PATH.
-    echo.
-    goto :check_img
+    if "!LANG!"=="PT" (
+        echo [INFO] 'grub-mkrescue' nao encontrado no PATH do Windows.
+        echo        Pulando geracao do arquivo luusos.iso.
+        echo        (O binario luusos.bin foi criado e pode ser usado direto no QEMU).
+    ) else (
+        echo [INFO] 'grub-mkrescue' not found in Windows PATH.
+        echo        Skipping luusos.iso generation.
+        echo        (The luusos.bin binary was built and can be used directly in QEMU).
+    )
+    goto :done
 )
 
-:: Build ISO directory structure
 if exist isodir rmdir /s /q isodir
 mkdir isodir\boot\grub
 
 copy /y luusos.bin isodir\boot\luusos.bin >nul
 copy /y grub.cfg   isodir\boot\grub\grub.cfg >nul
 
-:: Create the ISO
 grub-mkrescue -o luusos.iso isodir
 if errorlevel 1 (
-    echo [ERROR] grub-mkrescue failed.
-    goto :check_img
-)
-
-echo [OK] luusos.iso created!
-echo      Run with: qemu-system-i386 -cdrom luusos.iso
-
-:check_img
-if /i "%TARGET%"=="img" goto :make_img
-if /i "%TARGET%"=="all" goto :make_img
-goto :done
-
-:: ============================================================
-::  OPTIONAL — Generate raw disk image (flat binary with MBR stub)
-:: ============================================================
-
-:make_img
-echo.
-echo [IMG] Building raw disk image (luusos.img)...
-
-:: Check for dd (available in Git for Windows / MSYS2 / WSL)
-where dd >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo [WARNING] 'dd' not found in PATH.
-    echo           Install Git for Windows (which includes dd) or MSYS2.
-    echo           Skipping IMG generation.
-    echo.
+    if "!LANG!"=="PT" (echo [AVISO] Falha ao executar o grub-mkrescue.) else (echo [WARNING] Failed to execute grub-mkrescue.)
     goto :done
 )
 
-:: Create a 32 MB blank image
-dd if=/dev/zero of=luusos.img bs=512 count=65536 2>nul
-if errorlevel 1 goto :img_error
-
-:: Check for grub-install (writes GRUB MBR to the image)
-where grub-install >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo [WARNING] grub-install not found — IMG will be a raw zero-padded binary.
-    echo           For a proper bootable image, install GRUB tools (see ISO notes above).
-    echo.
-    :: Fallback: just copy the bin at the start (works with qemu -kernel)
-    copy /b luusos.bin + luusos.img luusos.img >nul 2>&1
-    echo [OK] luusos.img created (raw binary, use with: qemu-system-i386 -kernel luusos.bin)
-    goto :done
-)
-
-:: Use grub-install to write a bootable GRUB MBR
-grub-install --target=i386-pc --boot-directory=isodir\boot --no-floppy luusos.img
-if errorlevel 1 goto :img_error
-
-:: Copy kernel to image (requires loop mount — typically needs WSL/Linux)
-echo.
-echo [NOTE] To fully write the kernel to the img, mount it in WSL/Linux:
-echo        sudo mount -o loop,offset=1048576 luusos.img /mnt
-echo        sudo cp luusos.bin /mnt/boot/
-echo        sudo umount /mnt
-echo.
-echo [OK] luusos.img MBR written.
-echo      Run with: qemu-system-i386 -drive format=raw,file=luusos.img
-goto :done
-
-:img_error
-echo [ERROR] Failed to create disk image.
-goto :done
-
-:: ============================================================
-::  Summary
-:: ============================================================
+if "!LANG!"=="PT" (echo [OK] Imagem bootavel luusos.iso gerada com sucesso!) else (echo [OK] Bootable image luusos.iso successfully generated!)
+if exist isodir rmdir /s /q isodir
 
 :done
+:: Limpeza dos arquivos temporários de objeto
+del *.o >nul 2>&1
 echo.
 echo ============================================================
-echo  Build complete!
+if "!LANG!"=="PT" (echo   Build finalizado!) else (echo   Build complete!)
 echo ============================================================
-echo.
-echo  Files produced:
-echo    luusos.bin  -- Multiboot kernel (always built)
-if exist luusos.iso echo    luusos.iso  -- Bootable ISO (GRUB)
-if exist luusos.img echo    luusos.img  -- Raw disk image
-echo.
-echo  QEMU commands:
-echo    Kernel only : qemu-system-i386 -kernel luusos.bin
-if exist luusos.iso echo    ISO (CDROM) : qemu-system-i386 -cdrom luusos.iso
-if exist luusos.img echo    Disk image  : qemu-system-i386 -drive format=raw,file=luusos.img
 echo.
 pause
 exit /b 0
 
 :error
 echo.
-echo [ERROR] Build failed! Check the output above for details.
+if "!LANG!"=="PT" (echo [ERRO] Ocorreu uma falha durante o processo de compilacao.) else (echo [ERROR] A failure occurred during the compilation process.)
 echo.
 pause
 exit /b 1
