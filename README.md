@@ -28,7 +28,7 @@ O ecossistema é modularizado de modo flat e híbrido, suportando implementaçõ
 ---
 ### 🛠️ Pré-requisitos & Instalação da Toolchain
 > ⚠️ **AVISO SOBRE EXECUTÁVEIS E ARQUIVOS DE TERCEIROS:**
-> Este repositório hospeda estritamente o **código-fonte original** e scripts do LuusOS. Arquivos executáveis externos (`.exe`, `.dll`, compiladores ou ferramentas locais de terceiros) **NÃO** estão inclusos no repositório por razões de direitos autorais e segurança. Para compilar o código e gerar a sua própria imagem `.iso` ou `.bin`, você precisará baixar e instalar a toolchain por conta própria utilizando os comandos abaixo.
+> Este repositório hospeda estritamente o **código-fonte original** e scripts de automação locais do LuusOS. Arquivos executáveis externos, compiladores cruzados e dependências locais da toolchain (como as pastas binárias `toolchain2`, `i686-elf`, `include`, `lib`, `libexec`, `share`, `src` ou arquivos `.exe` do Windows) **NÃO** estão inclusos no repositório por razões de direitos autorais e integridade. Para compilar o código, o usuário deve configurar seu próprio ambiente isolado local ou instalar as ferramentas globais utilizando as instruções abaixo.
 #### Linux / Termux (Android)
 ```bash
 sudo apt update
@@ -36,20 +36,30 @@ sudo apt install build-essential nasm qemu-system-x86 qemu-system-arm xorriso gr
 ```
 #### Windows (WSL2 ou MSYS2)
  * **Opção 1 (Recomendado - WSL2 com Ubuntu):** Instale o WSL2 no prompt de comando (wsl --install), abra a distribuição Linux instalada e execute o comando clássico do Linux acima.
- * **Opção 2 (Nativo via MSYS2):** Abra o terminal do MSYS2 (UCRT64) e instale o pacote de ferramentas nativo:
+ * **Opção 2 (Nativo via MSYS2 / MinGW):** Baixe e extraia seu compilador cruzado i686-elf preferido para uma pasta local (como toolchain2), garanta que o diretório bin/ esteja mapeado nas variáveis de ambiente, ou abra o terminal do MSYS2 (UCRT64) e instale o pacote nativo:
 ```bash
 pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-qemu xorriso
 ```
 ### 🏗️ Compilação & Build System
+O LuusOS inclui scripts de automação de texto integrados para simplificar o processo completo de montagem, compilação e linkagem estrita do Kernel, mapeando automaticamente as chamadas do compilador e gerando a imagem estável de forma transparente.
  1. **Clone o repositório:**
 ```bash
 git clone [https://github.com/luispolis124/LuusOS.git](https://github.com/luispolis124/LuusOS.git)
 cd LuusOS
 ```
- 2. **Compile a imagem:**
-```bash
-make clean && make all
-```
+ 2. **Execute a compilação total automatizada:**
+   * **No Linux / Termux:** Dê permissão de execução e rode o script nativo:
+   ```bash
+   chmod +x build.sh
+   ./build.sh
+   
+   ```
+   * **No Windows (Prompt/MSYS2):** Execute o script em lote correspondente:
+   ```cmd
+   build.bat
+   
+   ```
+   * *Nota:* Caso prefira rodar os alvos do Makefile diretamente de forma manual, utilize o comando padrão: make clean && make all
 ### 🕹️ Execução & Emulação
 #### 1. Via QEMU (Linux, Windows e Termux)
  * **Executando em x86 (Modo Padrão):**
@@ -70,7 +80,7 @@ Para executar o LuusOS no seu celular usando o Limbo:
  3. Na aba **Removable Drives**, habilite a opção **CDROM** e selecione o arquivo luusos.iso (Consulte os campos de **Kernel** caso use o .bin direto).
  4. Defina a interface de vídeo como **std** ou **vmware** e clique em **Play/Iniciar**.
 #### 3. Via VirtualBox (Ambiente de Virtualização Completo)
- 1. Certifique-se de que o arquivo build/luusos.iso foi gerado com sucesso pelo make.
+ 1. Certifique-se de que o arquivo build/luusos.iso foi gerado com sucesso.
  2. Abra o VirtualBox e crie uma nova máquina virtual (Escolha o tipo *Other* / *Other/Unknown*).
  3. Vá em **Configurações > Armazenamento**, selecione o dispositivo óptico e anexe o luusos.iso.
  4. Garanta que a ordem de boot esteja configurada para iniciar pelo drive óptico e inicie a máquina.
@@ -98,7 +108,7 @@ The ecosystem features a modular flat and hybrid structure, targeting robust low
 
 ### 🛠️ Prerequisites & Toolchain Setup
 > ⚠️ **NOTICE REGARDING THIRD-PARTY EXECUTABLES & TOOLS:**
-> This repository strictly hosts the **original source code** and local build configuration files for LuusOS. Pre-compiled third-party binaries (.exe, .dll, localized build tools, or environments) **ARE NOT** bundled into the repository structure due to licensing and integrity baselines. To build the source files and construct your own .iso or .bin targets, you must provision and download the toolchains manually using the environment instructions listed below.
+> This repository strictly hosts the **original source code** and local automation build scripts for LuusOS. Pre-compiled third-party binaries, cross-compilers, or localized cross-compilation target folders (such as toolchain2, i686-elf, include, lib, libexec, share, src directories or Windows .exe formats) **ARE NOT** bundled into the repository structure due to licensing restrictions and build system integrity. To build the source files, you must install the compilation toolchains manually using the native infrastructure baselines described below.
 > 
 #### Linux / Termux (Android)
 ```bash
@@ -107,20 +117,30 @@ sudo apt install build-essential nasm qemu-system-x86 qemu-system-arm xorriso gr
 ```
 #### Windows (WSL2 or MSYS2)
  * **Option 1 (Recommended - WSL2 with Ubuntu):** Install WSL2 from your terminal (wsl --install), log into your Linux instance and run the native Linux setup snippet above.
- * **Option 2 (Native via MSYS2):** Open your MSYS2 terminal (UCRT64) and fetch the freestanding compilation toolchain:
+ * **Option 2 (Native via MSYS2 / MinGW):** Download and extract your preferred freestanding i686-elf toolchain into a localized folder (e.g., toolchain2), append its internal bin/ directory path to your System Environment variables, or run the native setup package via MSYS2 (UCRT64):
 ```bash
 pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-qemu xorriso
 ```
 ### 🏗️ Compilation & Build System
+LuusOS wraps its freestanding compiler flags inside portable plain-text build scripts to streamline compilation, linking phases, and target storage generation.
  1. **Clone the repository:**
 ```bash
 git clone [https://github.com/luispolis124/LuusOS.git](https://github.com/luispolis124/LuusOS.git)
 cd LuusOS
 ```
- 2. **Build the image:**
-```bash
-make clean && make all
-```
+ 2. **Run the automated compilation build pipeline:**
+   * **On Linux / Termux:** Grant permissions and execute the shell deployment script:
+   ```bash
+   chmod +x build.sh
+   ./build.sh
+   
+   ```
+   * **On Windows (Command Prompt / MSYS2):** Call the native batch wrapper script:
+   ```cmd
+   build.bat
+   
+   ```
+   * *Note:* If you prefer to target specific rules inside the Makefile by yourself, just execute: make clean && make all
 ### 🕹️ Running & Emulation
 #### 1. Via QEMU (Linux, Windows, and Termux)
  * **Running on x86 (Standard Mode):**
@@ -141,7 +161,7 @@ To test LuusOS directly on an Android device using Limbo:
  3. Inside the **Removable Drives** section, toggle **CDROM** and load your luusos.iso file (or provide it inside the **Kernel** fields if using raw standalone binaries).
  4. Select your Video Display Interface (e.g., **std** or **vmware**) and hit the **Play** button.
 #### 3. Via VirtualBox (Full VM Virtualization)
- 1. Ensure build/luusos.iso was successfully compiled using make.
+ 1. Ensure build/luusos.iso was successfully compiled.
  2. Open VirtualBox and create a new Virtual Machine (Set OS Type to *Other* / *Other/Unknown*).
  3. Open **Settings > Storage**, choose the Optical Device, and attach your local luusos.iso file.
  4. Verify Boot Priority settings and start up the instance.
