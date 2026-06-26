@@ -23,6 +23,7 @@ echo ============================================================
 echo.
 
 :: Configura os executáveis usando a estrutura do w64devkit
+:: O bin deve estar na pasta 'bin' ao lado deste script
 set "BIN_DIR=%~dp0bin"
 set "CC=%BIN_DIR%\gcc.exe"
 set "AS=%BIN_DIR%\as.exe"
