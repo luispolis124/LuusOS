@@ -22,24 +22,27 @@ echo   LuusOS Build System — Windows PC (w64devkit)
 echo ============================================================
 echo.
 
-:: Configura os executáveis locais na pasta bin
-set CC=%~dp0bin\gcc.exe
-set AS=%~dp0bin\as.exe
-set LD=%~dp0bin\ld.exe
+:: Configura os executáveis usando a estrutura do w64devkit
+set "BIN_DIR=%~dp0bin"
+set "CC=%BIN_DIR%\gcc.exe"
+set "AS=%BIN_DIR%\as.exe"
+set "LD=%BIN_DIR%\ld.exe"
 
-:: Verificação de segurança (Sem aspas para evitar erro de caminho)
-if exist %CC% goto :setup_menu
-
-if "!LANG!"=="PT" (
-    echo [ERRO] Compilador nao encontrado na pasta bin!
-    echo O arquivo gcc.exe nao foi detectado em: %~dp0bin\
-) else (
-    echo [ERROR] Compiler not found in bin folder!
-    echo The file gcc.exe was not detected in: %~dp0bin\
+:: Verificação de segurança
+if not exist "%CC%" (
+    if "!LANG!"=="PT" (
+        echo [ERRO] O w64devkit nao foi encontrado!
+        echo O arquivo gcc.exe nao foi localizado em: %BIN_DIR%
+        echo Certifique-se de que o build.bat esta na mesma pasta que a pasta 'bin'.
+    ) else (
+        echo [ERROR] w64devkit not found!
+        echo The file gcc.exe was not located in: %BIN_DIR%
+        echo Make sure build.bat is in the same directory as the 'bin' folder.
+    )
+    echo.
+    pause
+    exit /b 1
 )
-echo.
-pause 
-exit /b 1
 
 :setup_menu
 :: Menu Interativo de Seleção de Alvo
@@ -106,7 +109,7 @@ goto :done
 ::  FUNÇÕES AUXILIARES
 :: ============================================================
 :compile
-if "%~2"=="boot.o" (set "CMD=%AS% --32") else if "%~2"=="gdt_flush.o" (set "CMD=%AS% --32") else if "%~2"=="isr.o" (set "CMD=%AS% --32") else (set "CMD=%CC% -m32")
+if "%~2"=="boot.o" (set "CMD="%AS%" --32") else if "%~2"=="gdt_flush.o" (set "CMD="%AS%" --32") else if "%~2"=="isr.o" (set "CMD="%AS%" --32") else (set "CMD="%CC%" -m32")
 if "!LANG!"=="PT" (echo    Compilando %~1...) else (echo    Compiling %~1...)
 %CMD% %~3 %~1 -o %~2
 if errorlevel 1 goto :error
@@ -118,11 +121,9 @@ if "!LANG!"=="PT" (echo [ISO] Verificando ferramentas de geracao de imagem...) e
 where grub-mkrescue >nul 2>&1
 if errorlevel 1 (
     if "!LANG!"=="PT" (
-        echo [INFO] 'grub-mkrescue' nao encontrado no PATH do Windows.
-        echo        Pulando geracao do arquivo luusos.iso.
+        echo [INFO] 'grub-mkrescue' nao encontrado no PATH. Pulando geracao da ISO.
     ) else (
-        echo [INFO] 'grub-mkrescue' not found in Windows PATH.
-        echo        Skipping luusos.iso generation.
+        echo [INFO] 'grub-mkrescue' not found. Skipping ISO generation.
     )
     goto :done
 )
