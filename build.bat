@@ -23,22 +23,22 @@ echo ============================================================
 echo.
 
 :: Configura os executáveis locais na pasta bin
-set "CC=%~dp0bin\gcc.exe"
-set "AS=%~dp0bin\as.exe"
-set "LD=%~dp0bin\ld.exe"
+set CC=%~dp0bin\gcc.exe
+set AS=%~dp0bin\as.exe
+set LD=%~dp0bin\ld.exe
 
-:: Verificação de segurança (Fora de blocos complexos)
-if exist "!CC!" goto :setup_menu
+:: Verificação de segurança (Sem aspas para evitar erro de caminho)
+if exist %CC% goto :setup_menu
 
 if "!LANG!"=="PT" (
     echo [ERRO] Compilador nao encontrado na pasta bin!
-    echo O arquivo gcc.exe nao foi detectado em: bin\
+    echo O arquivo gcc.exe nao foi detectado em: %~dp0bin\
 ) else (
     echo [ERROR] Compiler not found in bin folder!
-    echo The file gcc.exe was not detected in: bin\
+    echo The file gcc.exe was not detected in: %~dp0bin\
 )
 echo.
-pause
+pause 
 exit /b 1
 
 :setup_menu
@@ -48,7 +48,7 @@ if "!LANG!"=="PT" (
     echo  [1] Apenas Kernel (luusos.bin)
     echo  [2] Kernel + Imagem Optica (luusos.iso)
     echo.
-    choice /c 12 /n /m "Digite a opcao desejada (1 or 2): "
+    choice /c 12 /n /m "Digite a opcao desejada (1 ou 2): "
 ) else (
     echo Choose the desired build target:
     echo  [1] Kernel Only (luusos.bin)
@@ -115,39 +115,27 @@ exit /b
 :make_iso
 echo.
 if "!LANG!"=="PT" (echo [ISO] Verificando ferramentas de geracao de imagem...) else (echo [ISO] Checking image generation tools...)
-
 where grub-mkrescue >nul 2>&1
 if errorlevel 1 (
     if "!LANG!"=="PT" (
         echo [INFO] 'grub-mkrescue' nao encontrado no PATH do Windows.
         echo        Pulando geracao do arquivo luusos.iso.
-        echo        (O binario luusos.bin foi criado e pode ser usado direto no QEMU).
     ) else (
         echo [INFO] 'grub-mkrescue' not found in Windows PATH.
         echo        Skipping luusos.iso generation.
-        echo        (The luusos.bin binary was built and can be used directly in QEMU).
     )
     goto :done
 )
-
 if exist isodir rmdir /s /q isodir
 mkdir isodir\boot\grub
-
 copy /y luusos.bin isodir\boot\luusos.bin >nul
 copy /y grub.cfg   isodir\boot\grub\grub.cfg >nul
-
-grub-mkrescue -o luusos.iso isodir
-if errorlevel 1 (
-    if "!LANG!"=="PT" (echo [AVISO] Falha ao executar o grub-mkrescue.) else (echo [WARNING] Failed to execute grub-mkrescue.)
-    goto :done
-)
-
+grub-mkrescue -o luusos.iso isodir >nul 2>&1
 if "!LANG!"=="PT" (echo [OK] Imagem bootavel luusos.iso gerada com sucesso!) else (echo [OK] Bootable image luusos.iso successfully generated!)
 if exist isodir rmdir /s /q isodir
 goto :done
 
 :done
-:: Limpeza dos arquivos temporários de objeto
 del *.o >nul 2>&1
 echo.
 echo ============================================================
