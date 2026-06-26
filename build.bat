@@ -22,31 +22,33 @@ echo   LuusOS Build System — Windows PC (w64devkit)
 echo ============================================================
 echo.
 
-:: Configura os executáveis locais instalados na pasta bin via w64devkit
-set CC="%~dp0bin\gcc.exe" -m32
-set AS="%~dp0bin\as.exe" --32
-set LD="%~dp0bin\ld.exe" -m elf_i386
+:: Configura os executáveis locais na pasta bin
+set "CC=%~dp0bin\gcc.exe"
+set "AS=%~dp0bin\as.exe"
+set "LD=%~dp0bin\ld.exe"
 
-if not exist "%~dp0bin\gcc.exe" (
-    if "!LANG!"=="PT" (
-        echo [ERRO] Compilador nao encontrado na pasta bin!
-        echo Rode o comando do PowerShell para baixar a toolchain primeiro.
-    ) else (
-        echo [ERROR] Compiler not found in bin folder!
-        echo Run the PowerShell command to download the toolchain first.
-    )
-    echo.
-    pause
-    exit /b 1
+:: Verificação de segurança (Fora de blocos complexos)
+if exist "!CC!" goto :setup_menu
+
+if "!LANG!"=="PT" (
+    echo [ERRO] Compilador nao encontrado na pasta bin!
+    echo O arquivo gcc.exe nao foi detectado em: bin\
+) else (
+    echo [ERROR] Compiler not found in bin folder!
+    echo The file gcc.exe was not detected in: bin\
 )
+echo.
+pause
+exit /b 1
 
+:setup_menu
 :: Menu Interativo de Seleção de Alvo
 if "!LANG!"=="PT" (
     echo Escolha o tipo de compilacao desejado:
     echo  [1] Apenas Kernel (luusos.bin)
     echo  [2] Kernel + Imagem Optica (luusos.iso)
     echo.
-    choice /c 12 /n /m "Digite a opcao desejada (1 ou 2): "
+    choice /c 12 /n /m "Digite a opcao desejada (1 or 2): "
 ) else (
     echo Choose the desired build target:
     echo  [1] Kernel Only (luusos.bin)
@@ -72,56 +74,24 @@ echo.
 :: ============================================================
 if "!LANG!"=="PT" (echo [1/2] Compilando arquivos de codigo-fonte...) else (echo [1/2] Compiling source files...)
 
-if "!LANG!"=="PT" (echo   Montando src/boot.s) else (echo   Assembling src/boot.s)
-%AS% -c src/boot.s -o boot.o
-if errorlevel 1 goto :error
-
-if "!LANG!"=="PT" (echo   Montando src/gdt_flush.s) else (echo   Assembling src/gdt_flush.s)
-%AS% -c src/gdt_flush.s -o gdt_flush.o
-if errorlevel 1 goto :error
-
-if "!LANG!"=="PT" (echo   Montando src/isr.s) else (echo   Assembling src/isr.s)
-%AS% -c src/isr.s -o isr.o
-if errorlevel 1 goto :error
-
-if "!LANG!"=="PT" (echo   Compilando src/gdt.c) else (echo   Compiling src/gdt.c)
-%CC% -c src/gdt.c -o gdt.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
-if errorlevel 1 goto :error
-
-if "!LANG!"=="PT" (echo   Compilando src/idt.c) else (echo   Compiling src/idt.c)
-%CC% -c src/idt.c -o idt.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
-if errorlevel 1 goto :error
-
-if "!LANG!"=="PT" (echo   Compilando src/kernel.c) else (echo   Compiling src/kernel.c)
-%CC% -c src/kernel.c -o kernel.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
-if errorlevel 1 goto :error
-
-if "!LANG!"=="PT" (echo   Compilando src/keyboard.c) else (echo   Compiling src/keyboard.c)
-%CC% -c src/keyboard.c -o keyboard.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
-if errorlevel 1 goto :error
-
-if "!LANG!"=="PT" (echo   Compilando src/string.c) else (echo   Compiling src/string.c)
-%CC% -c src/string.c -o string.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
-if errorlevel 1 goto :error
-
-if "!LANG!"=="PT" (echo   Compilando src/shell.c) else (echo   Compiling src/shell.c)
-%CC% -c src/shell.c -o shell.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
-if errorlevel 1 goto :error
-
-if "!LANG!"=="PT" (echo   Compilando src/sound.c) else (echo   Compiling src/sound.c)
-%CC% -c src/sound.c -o sound.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
-if errorlevel 1 goto :error
-
-if "!LANG!"=="PT" (echo   Compilando src/timer.c) else (echo   Compiling src/timer.c)
-%CC% -c src/timer.c -o timer.o -ffreestanding -O2 -Wall -Wextra -std=gnu99
-if errorlevel 1 goto :error
+call :compile src/boot.s boot.o -c
+call :compile src/gdt_flush.s gdt_flush.o -c
+call :compile src/isr.s isr.o -c
+call :compile src/gdt.c gdt.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
+call :compile src/idt.c idt.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
+call :compile src/kernel.c kernel.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
+call :compile src/keyboard.c keyboard.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
+call :compile src/string.c string.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
+call :compile src/shell.c shell.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
+call :compile src/sound.c sound.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
+call :compile src/timer.c timer.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
 
 :: ============================================================
 ::  PASSO 2 — Linkagem do Executável do Kernel
 :: ============================================================
 echo.
 if "!LANG!"=="PT" (echo [2/2] Linkando objetos no binario estavel luusos.bin...) else (echo [2/2] Linking objects into stable luusos.bin...)
-%LD% -T linker.ld -o luusos.bin boot.o gdt_flush.o isr.o gdt.o idt.o kernel.o keyboard.o string.o shell.o sound.o timer.o
+"%LD%" -m elf_i386 -T linker.ld -o luusos.bin boot.o gdt_flush.o isr.o gdt.o idt.o kernel.o keyboard.o string.o shell.o sound.o timer.o
 if errorlevel 1 goto :error
 
 if "!LANG!"=="PT" (echo [OK] Kernel luusos.bin gerado com sucesso!) else (echo [OK] Kernel luusos.bin successfully generated!)
@@ -131,6 +101,16 @@ if "!LANG!"=="PT" (echo [OK] Kernel luusos.bin gerado com sucesso!) else (echo [
 :: ============================================================
 if /i "%TARGET%"=="iso" goto :make_iso
 goto :done
+
+:: ============================================================
+::  FUNÇÕES AUXILIARES
+:: ============================================================
+:compile
+if "%~2"=="boot.o" (set "CMD=%AS% --32") else if "%~2"=="gdt_flush.o" (set "CMD=%AS% --32") else if "%~2"=="isr.o" (set "CMD=%AS% --32") else (set "CMD=%CC% -m32")
+if "!LANG!"=="PT" (echo    Compilando %~1...) else (echo    Compiling %~1...)
+%CMD% %~3 %~1 -o %~2
+if errorlevel 1 goto :error
+exit /b
 
 :make_iso
 echo.
@@ -164,6 +144,7 @@ if errorlevel 1 (
 
 if "!LANG!"=="PT" (echo [OK] Imagem bootavel luusos.iso gerada com sucesso!) else (echo [OK] Bootable image luusos.iso successfully generated!)
 if exist isodir rmdir /s /q isodir
+goto :done
 
 :done
 :: Limpeza dos arquivos temporários de objeto
