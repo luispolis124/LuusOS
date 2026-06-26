@@ -1,4 +1,5 @@
 # 🪐 LuusOS — Bare-Metal Operating System
+
 <p align="center">
   <img src="banner.png" alt="LuusOS Banner" width="100%">
 </p>
@@ -26,6 +27,8 @@ O ecossistema é modularizado de modo flat e híbrido, suportando implementaçõ
 
 ---
 ### 🛠️ Pré-requisitos & Instalação da Toolchain
+> ⚠️ **AVISO SOBRE EXECUTÁVEIS E ARQUIVOS DE TERCEIROS:**
+> Este repositório hospeda estritamente o **código-fonte original** e scripts do LuusOS. Arquivos executáveis externos (`.exe`, `.dll`, compiladores ou ferramentas locais de terceiros) **NÃO** estão inclusos no repositório por razões de direitos autorais e segurança. Para compilar o código e gerar a sua própria imagem `.iso` ou `.bin`, você precisará baixar e instalar a toolchain por conta própria utilizando os comandos abaixo.
 #### Linux / Termux (Android)
 ```bash
 sudo apt update
@@ -94,6 +97,9 @@ The ecosystem features a modular flat and hybrid structure, targeting robust low
 | **Core Compilers** | GCC / Clang / LLVM / NASM | Freestanding cross-compilation with no stdlib links. |
 
 ### 🛠️ Prerequisites & Toolchain Setup
+> ⚠️ **NOTICE REGARDING THIRD-PARTY EXECUTABLES & TOOLS:**
+> This repository strictly hosts the **original source code** and local build configuration files for LuusOS. Pre-compiled third-party binaries (.exe, .dll, localized build tools, or environments) **ARE NOT** bundled into the repository structure due to licensing and integrity baselines. To build the source files and construct your own .iso or .bin targets, you must provision and download the toolchains manually using the environment instructions listed below.
+> 
 #### Linux / Termux (Android)
 ```bash
 sudo apt update
