@@ -1,8 +1,8 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 :: ============================================================
-::  LuusOS Build Script
+::  LuusOS Build Script (Automated Toolchain Setup)
 ::  Usage:
 ::    build.bat          -> compile + link -> luusos.bin only
 ::    build.bat iso      -> compile + link + create bootable ISO
@@ -14,17 +14,6 @@ set CC=bin\i686-elf-gcc.exe
 set AS=bin\i686-elf-as.exe
 set LD=bin\i686-elf-ld.exe
 
-:: Check for cross-compiler
-if not exist bin\i686-elf-gcc.exe (
-    echo [ERROR] Cross-compiler not found: bin\i686-elf-gcc.exe
-    echo         Please ensure the i686-elf toolchain is in the bin\ folder.
-    pause
-    exit /b 1
-)
-
-set TARGET=%~1
-if "%TARGET%"=="" set TARGET=bin
-
 echo.
 echo ============================================================
 echo  LuusOS Build System
@@ -32,52 +21,102 @@ echo ============================================================
 echo.
 
 :: ============================================================
+::  AUTOMATED STEP — Check and Download Toolchain if missing
+:: ============================================================
+
+if not exist "%CC%" (
+    echo [INFO] Cross-compiler i686-elf-gcc.exe not found locally.
+    echo [INFO] Preparing automated download from official open-source upstream...
+    echo [INFO] Project: i686-elf-tools (by @lordmilko)
+    echo.
+    
+    :: Create toolchain download directory
+    if not exist toolchain_tmp mkdir toolchain_tmp
+    
+    echo [DOWNLOADING] Fetching i686-elf-tools-windows.zip...
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-windows.zip' -OutFile 'toolchain_tmp\toolchain.zip'"
+    
+    if errorlevel 1 (
+        echo [ERROR] PowerShell download failed. Trying fallback bitsadmin...
+        bitsadmin /transfer "LuusOSToolchain" https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-windows.zip %CD%\toolchain_tmp\toolchain.zip >nul
+    )
+    
+    if not exist toolchain_tmp\toolchain.zip (
+        echo [CRITICAL] Failed to download the toolchain architecture automatically.
+        echo Please download manually from: https://github.com/lordmilko/i686-elf-tools
+        echo and extract its contents into the root or 'bin/' directory.
+        pause
+        exit /b 1
+    )
+    
+    echo [EXTRACTING] Unpacking toolchain components into bin/ structure...
+    if not exist bin mkdir bin
+    powershell -Command "Expand-Archive -Path 'toolchain_tmp\toolchain.zip' -DestinationPath 'bin\' -Force"
+    
+    :: Clean up temporary download artifacts
+    rmdir /s /q toolchain_tmp >nul 2>&1
+    
+    echo [OK] Toolchain downloaded and mapped successfully!
+    echo.
+)
+
+:: Re-verify after download attempt
+if not exist "%CC%" (
+    echo [ERROR] Cross-compiler verification failed. Ensure binaries are mapped to bin\i686-elf-gcc.exe
+    pause
+    exit /b 1
+)
+
+set TARGET=%~1
+if "%TARGET%"=="" set TARGET=bin
+
+:: ============================================================
 ::  STEP 1 — Compile all C and assembly sources
 :: ============================================================
 
 echo [1/2] Compiling sources...
 
-echo   Assembling src\boot.s
+echo    Assembling src\boot.s
 %AS% src\boot.s -o boot.o
 if errorlevel 1 goto :error
 
-echo   Assembling src\gdt_flush.s
+echo    Assembling src\gdt_flush.s
 %AS% src\gdt_flush.s -o gdt_flush.o
 if errorlevel 1 goto :error
 
-echo   Assembling src\isr.s
+echo    Assembling src\isr.s
 %AS% src\isr.s -o isr.o
 if errorlevel 1 goto :error
 
-echo   Compiling src\gdt.c
+echo    Compiling src\gdt.c
 %CC% -c src\gdt.c -o gdt.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 if errorlevel 1 goto :error
 
-echo   Compiling src\idt.c
+echo    Compiling src\idt.c
 %CC% -c src\idt.c -o idt.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 if errorlevel 1 goto :error
 
-echo   Compiling src\kernel.c
+echo    Compiling src\kernel.c
 %CC% -c src\kernel.c -o kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 if errorlevel 1 goto :error
 
-echo   Compiling src\keyboard.c
+echo    Compiling src\keyboard.c
 %CC% -c src\keyboard.c -o keyboard.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 if errorlevel 1 goto :error
 
-echo   Compiling src\string.c
+echo    Compiling src\string.c
 %CC% -c src\string.c -o string.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 if errorlevel 1 goto :error
 
-echo   Compiling src\shell.c
+echo    Compiling src\shell.c
 %CC% -c src\shell.c -o shell.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 if errorlevel 1 goto :error
 
-echo   Compiling src\sound.c
+echo    Compiling src\sound.c
 %CC% -c src\sound.c -o sound.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 if errorlevel 1 goto :error
 
-echo   Compiling src\timer.c
+echo    Compiling src\timer.c
 %CC% -c src\timer.c -o timer.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 if errorlevel 1 goto :error
 
