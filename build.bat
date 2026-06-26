@@ -17,7 +17,7 @@ echo   LuusOS Build System — Windows PC
 echo ============================================================
 echo.
 
-:: Caminhos dos executáveis (esperados na pasta bin\)
+:: Caminhos dos executáveis
 set "BIN_DIR=%~dp0bin"
 set "CC=%BIN_DIR%\i686-elf-gcc.exe"
 set "AS=%BIN_DIR%\i686-elf-as.exe"
@@ -29,11 +29,7 @@ set "LD=%BIN_DIR%\i686-elf-ld.exe"
 if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
 
 if not exist "%CC%" (
-    if "!LANG!"=="PT" (
-        echo [INFO] Compilador nao encontrado. Iniciando download automatico...
-    ) else (
-        echo [INFO] Compiler not found. Starting automated download...
-    )
+    if "!LANG!"=="PT" (echo [INFO] Compilador nao encontrado. Iniciando download...) else (echo [INFO] Compiler not found. Starting download...)
     
     if not exist toolchain_tmp mkdir toolchain_tmp
     powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-windows.zip' -OutFile 'toolchain_tmp\toolchain.zip'"
@@ -42,13 +38,12 @@ if not exist "%CC%" (
         powershell -Command "Expand-Archive -Path 'toolchain_tmp\toolchain.zip' -DestinationPath 'bin\' -Force"
         rmdir /s /q toolchain_tmp
     ) else (
-        echo [ERRO] Falha no download. Verifique sua conexao.
+        echo [ERRO] Falha no download.
         pause & exit /b 1
     )
 )
 
 :setup_menu
-:: Menu Interativo
 if "!LANG!"=="PT" (
     echo Escolha o tipo de compilacao:
     echo  [1] Apenas Kernel (luusos.bin)
@@ -97,10 +92,10 @@ if /i "%TARGET%"=="iso" goto :make_iso
 goto :done
 
 :: ============================================================
-::  FUNÇÕES
+::  FUNÇÃO COMPILE CORRIGIDA
 :: ============================================================
 :compile
-if "%~2"=="boot.o" (set "CMD="%AS%" --32") else if "%~2"=="gdt_flush.o" (set "CMD="%AS%" --32") else if "%~2"=="isr.o" (set "CMD="%AS%" --32") else (set "CMD="%CC%" -m32")
+if "%~2"=="boot.o" (set "CMD=%AS% --32") else if "%~2"=="gdt_flush.o" (set "CMD=%AS% --32") else if "%~2"=="isr.o" (set "CMD=%AS% --32") else (set "CMD=%CC% -m32")
 echo    Compilando %~1...
 %CMD% %~3 %~1 -o %~2
 if errorlevel 1 goto :error
