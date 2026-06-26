@@ -11,11 +11,13 @@
 ## 🇧🇷 Português
 O **LuusOS** é um projeto independente e focado em engenharia de sistemas operacionais nativos (*OSDev*), projetado para explorar o controle direto de hardware, inicialização bare-metal e desenvolvimento de estruturas fundamentais de kernel a partir do zero absoluto.
 O ecossistema é modularizado de modo flat e híbrido, suportando implementações robustas de baixo nível para **x86 (IA-32)** e portabilidade evolutiva para **AArch64 (ARM64)**.
+
 ### 🚀 Funcionalidades Atuais & Core Modules
 * **Multiboot Integration:** Suporte a especificações padrão Multiboot e carregadores como GRUB, chaveando com segurança para o Modo Protegido de 32-bits (ou inicialização customizada em ARM Exception Level 1).
 * **VGA Text Mode Driver:** Escrita direta no buffer mapeado em memória em `0xB8000` para saída de texto clássica $80 \times 25$ com manipulação manual de bytes de atributos (cores e fontes).
 * **Low-Level Memory Management:** Implementação inicial da Global Descriptor Table (GDT), tabelas de paginação planas e isolamento preliminar de segmentos do Kernel (Ring 0).
 * **Dual-Language Engine:** Lógica estruturada em **C** e **Rust** de alta performance apoiada por sub-rotinas cirúrgicas em **Assembly (NASM / GNU As)** para manipulação direta de registradores do processador.
+
 ### 🗺️ Mapa de Arquitetura do Sistema
 
 | Componente | Endereço / Especificação Técnica | Descrição |
@@ -28,153 +30,259 @@ O ecossistema é modularizado de modo flat e híbrido, suportando implementaçõ
 ---
 ### 🛠️ Pré-requisitos & Instalação da Toolchain
 > ⚠️ **AVISO SOBRE EXECUTÁVEIS E ARQUIVOS DE TERCEIROS:**
-> Este repositório hospeda estritamente o **código-fonte original** e scripts de automação locais do LuusOS. Arquivos executáveis externos, compiladores cruzados e dependências locais da toolchain (como as pastas binárias `toolchain2`, `i686-elf`, `include`, `lib`, `libexec`, `share`, `src` ou arquivos `.exe` do Windows) **NÃO** estão inclusos no repositório por razões de direitos autorais e integridade. Para compilar o código, o usuário deve configurar seu próprio ambiente isolado local ou instalar as ferramentas globais utilizando as instruções abaixo.
+> Este repositório hospeda estritamente o **código-fonte original** e scripts de automação locais do LuusOS. Arquivos executáveis externos, compiladores cruzados e dependências locais da toolchain (como as pastas binárias `toolchain2`, `i686-elf`, `include`, `lib`, `libexec`, `share`, `src` ou arquivos `.exe` do Windows) **NÃO** estão inclusos no repositório por razões de direitos autorais e integridade.
+
+#### 📥 Origem e Identificação da Toolchain Automatizada
+Para simplificar o desenvolvimento sem inflar o repositório, nossos scripts automatizados de compilação (`build.sh` e `build.bat`) realizam a busca e o download dinâmico de ferramentas de compilação cruzada Open Source consolidadas. O ecossistema baixa de forma transparente os seguintes pacotes:
+* **Nome do Projeto Base:** [i686-elf-tools](https://github.com/lordmilko/i686-elf-tools) (Mantido de forma pública por @lordmilko no GitHub).
+* **Binários Alvo:** Binários isolados do `i686-elf-gcc` (v7.1.0) e utilitários da tabela binária (*binutils*) estruturados estritamente para ambientes freestanding (sem dependências do sistema hospedeiro).
+* **Links Oficiais Utilizados na Automação:**
+  * Alvo Windows: `https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-windows.zip`
+  * Alvo Linux: `https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-linux.zip`
+
+Caso prefira não utilizar o script automatizado e queira instalar os compiladores globais ou locais manualmente por conta própria, execute as instruções padrão abaixo:
+
 #### Linux / Termux (Android)
 ```bash
 sudo apt update
 sudo apt install build-essential nasm qemu-system-x86 qemu-system-arm xorriso grub-pc-bin cimg-dev clang lld
+
 ```
+
 #### Windows (WSL2 ou MSYS2)
- * **Opção 1 (Recomendado - WSL2 com Ubuntu):** Instale o WSL2 no prompt de comando (wsl --install), abra a distribuição Linux instalada e execute o comando clássico do Linux acima.
- * **Opção 2 (Nativo via MSYS2 / MinGW):** Baixe e extraia seu compilador cruzado i686-elf preferido para uma pasta local (como toolchain2), garanta que o diretório bin/ esteja mapeado nas variáveis de ambiente, ou abra o terminal do MSYS2 (UCRT64) e instale o pacote nativo:
+
+* **Opção 1 (Recomendado - WSL2 com Ubuntu):** Instale o WSL2 no prompt de comando (`wsl --install`), abra a distribuição Linux instalada e execute o comando clássico do Linux acima.
+* **Opção 2 (Nativo via MSYS2 / MinGW):** Baixe os arquivos do pacote `i686-elf-tools` listados na tabela acima, extraia-os em uma pasta local do seu sistema (ex: `toolchain2`), adicione o caminho absoluto da pasta `/bin` nas Variáveis de Ambiente do Windows, ou instale os pacotes de desenvolvimento direto no terminal MSYS2 (UCRT64):
+
 ```bash
 pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-qemu xorriso
+
 ```
+
 ### 🏗️ Compilação & Build System
+
 O LuusOS inclui scripts de automação de texto integrados para simplificar o processo completo de montagem, compilação e linkagem estrita do Kernel, mapeando automaticamente as chamadas do compilador e gerando a imagem estável de forma transparente.
- 1. **Clone o repositório:**
+
+1. **Clone o repositório:**
+
 ```bash
 git clone [https://github.com/luispolis124/LuusOS.git](https://github.com/luispolis124/LuusOS.git)
 cd LuusOS
+
 ```
- 2. **Execute a compilação total automatizada:**
-   * **No Linux / Termux:** Dê permissão de execução e rode o script nativo:
-   ```bash
-   chmod +x build.sh
-   ./build.sh
-   
-   ```
-   * **No Windows (Prompt/MSYS2):** Execute o script em lote correspondente:
-   ```cmd
-   build.bat
-   
-   ```
-   * *Nota:* Caso prefira rodar os alvos do Makefile diretamente de forma manual, utilize o comando padrão: make clean && make all
+
+2. **Execute a compilação total automatizada:**
+
+* **No Linux / Termux:** Dê permissão de execução e rode o script nativo:
+
+```bash
+chmod +x build.sh
+./build.sh
+
+```
+
+* **No Windows (Prompt/MSYS2):** Execute o script em lote correspondente:
+
+```cmd
+build.bat
+
+```
+
+* *Nota:* Caso prefira rodar os alvos do Makefile diretamente de forma manual, utilize o comando padrão: `make clean && make all`
+
 ### 🕹️ Execução & Emulação
+
 #### 1. Via QEMU (Linux, Windows e Termux)
- * **Executando em x86 (Modo Padrão):**
+
+* **Executando em x86 (Modo Padrão):**
+
 ```bash
 # Testando a ISO estável gerada pelo build system
 qemu-system-i386 -cdrom build/luusos.iso
 # Testando via Kernel direto (Multiboot)
 qemu-system-i386 -kernel build/luusos.bin
+
 ```
- * **Executando em AArch64 (Modo ARM64 Virt):**
+
+* **Executando em AArch64 (Modo ARM64 Virt):**
+
 ```bash
 qemu-system-aarch64 -M virt -cpu cortex-a57 -nographic -kernel target/LuusOS.bin
+
 ```
+
 #### 2. Via Limbo PC Emulator (Mobile / Android)
+
 Para executar o LuusOS no seu celular usando o Limbo:
- 1. Copie o arquivo gerado build/luusos.iso ou build/luusos.bin para o armazenamento do seu dispositivo móvel.
- 2. Abra o **Limbo PC Emulator**, crie uma nova máquina virtual e configure a arquitetura para **x86** (ou arm64 dependendo da build).
- 3. Na aba **Removable Drives**, habilite a opção **CDROM** e selecione o arquivo luusos.iso (Consulte os campos de **Kernel** caso use o .bin direto).
- 4. Defina a interface de vídeo como **std** ou **vmware** e clique em **Play/Iniciar**.
+
+1. Copie o arquivo gerado `build/luusos.iso` ou `build/luusos.bin` para o armazenamento do seu dispositivo móvel.
+2. Abra o **Limbo PC Emulator**, crie uma nova máquina virtual e configure a arquitetura para **x86** (ou arm64 dependendo da build).
+3. Na aba **Removable Drives**, habilite a opção **CDROM** e selecione o arquivo luusos.iso (Consulte os campos de **Kernel** caso use o .bin direto).
+4. Defina a interface de vídeo como **std** ou **vmware** e clique em **Play/Iniciar**.
+
 #### 3. Via VirtualBox (Ambiente de Virtualização Completo)
- 1. Certifique-se de que o arquivo build/luusos.iso foi gerado com sucesso.
- 2. Abra o VirtualBox e crie uma nova máquina virtual (Escolha o tipo *Other* / *Other/Unknown*).
- 3. Vá em **Configurações > Armazenamento**, selecione o dispositivo óptico e anexe o luusos.iso.
- 4. Garanta que a ordem de boot esteja configurada para iniciar pelo drive óptico e inicie a máquina.
+
+1. Certifique-se de que o arquivo `build/luusos.iso` foi gerado com sucesso.
+2. Abra o VirtualBox e crie uma nova máquina virtual (Escolha o tipo *Other* / *Other/Unknown*).
+3. Vá em **Configurações > Armazenamento**, selecione o dispositivo óptico e anexe o luusos.iso.
+4. Garanta que a ordem de boot esteja configurada para iniciar pelo drive óptico e inicie a máquina.
+
 #### 4. Gravando em um Pendrive (Bare-Metal Real)
+
 ```bash
 # Linux / WSL2
 sudo dd if=build/luusos.iso of=/dev/sdX bs=4M && sync
+
 ```
+
+---
+
 ## 🇺🇸 English
+
 **LuusOS** is an independent hobbyist operating system kernel project (*OSDev*) designed for bare-metal system programming, hardware initialization, and developing fundamental kernel structures from scratch.
 The ecosystem features a modular flat and hybrid structure, targeting robust low-level implementations for **x86 (IA-32)** alongside evolutionary portability for **AArch64 (ARM64)**.
+
 ### 🚀 Current Features & Core Modules
- * **Multiboot Integration:** Native support for standard Multiboot specifications and bootloaders like GRUB, safely switching into 32-bit Protected Mode (or custom initialization in ARM Exception Level 1).
- * **VGA Text Mode Driver:** Direct manipulation of the text video memory buffer mapped at 0xB8000 for classic 80 \times 25 output via custom attribute bytes (colors and fonts).
- * **Low-Level Memory Management:** Initial setup of the Global Descriptor Table (GDT), early paging tables, and basic isolation for high-privilege kernel segments (Ring 0).
- * **Dual-Language Engine:** High-performance architectural core built using **C** and **Rust**, coupled with fine-tuned **Assembly (NASM / GNU As)** routines for direct CPU register interaction.
+
+* **Multiboot Integration:** Native support for standard Multiboot specifications and bootloaders like GRUB, safely switching into 32-bit Protected Mode (or custom initialization in ARM Exception Level 1).
+* **VGA Text Mode Driver:** Direct manipulation of the text video memory buffer mapped at `0xB8000` for classic $80 \times 25$ output via custom attribute bytes (colors and fonts).
+* **Low-Level Memory Management:** Initial setup of the Global Descriptor Table (GDT), early paging tables, and basic isolation for high-privilege kernel segments (Ring 0).
+* **Dual-Language Engine:** High-performance architectural core built using **C** and **Rust**, coupled with fine-tuned **Assembly (NASM / GNU As)** routines for direct CPU register interaction.
+
 ### 🗺️ System Architecture Map
 
 | Component | Target Address / Tech Specs | Description |
-| :--- | :--- | :--- |
+| --- | --- | --- |
 | **VGA Video Buffer** | 0xB8000 (Text Mode) | Direct buffer character and color manipulation. |
 | **Bootloader Target** | x86 Flat / IA-32 / AArch64 Virt | Scalable emulation target via QEMU environments. |
 | **Kernel Stack Pointer** | Pre-allocated reserved area | Set up manually during early Assembly initialization. |
 | **Core Compilers** | GCC / Clang / LLVM / NASM | Freestanding cross-compilation with no stdlib links. |
 
+---
+
 ### 🛠️ Prerequisites & Toolchain Setup
+
 > ⚠️ **NOTICE REGARDING THIRD-PARTY EXECUTABLES & TOOLS:**
-> This repository strictly hosts the **original source code** and local automation build scripts for LuusOS. Pre-compiled third-party binaries, cross-compilers, or localized cross-compilation target folders (such as toolchain2, i686-elf, include, lib, libexec, share, src directories or Windows .exe formats) **ARE NOT** bundled into the repository structure due to licensing restrictions and build system integrity. To build the source files, you must install the compilation toolchains manually using the native infrastructure baselines described below.
-> 
+> This repository strictly hosts the **original source code** and local automation build scripts for LuusOS. Pre-compiled third-party binaries, cross-compilers, or localized cross-compilation target folders (such as `toolchain2`, `i686-elf`, `include`, `lib`, `libexec`, `share`, `src` directories or Windows `.exe` formats) **ARE NOT** bundled into the repository structure due to licensing restrictions and build system integrity.
+
+#### 📥 Automated Toolchain Identification & Origin
+
+To streamline the build system overhead, our plain-text setup automation files (`build.sh` & `build.bat`) fetch established open-source toolchain binaries on the fly. The continuous integration logic fetches components safely from:
+
+* **Target Open Source Project:** [i686-elf-tools](https://github.com/lordmilko/i686-elf-tools) (Maintained as an active open-source project by @lordmilko).
+* **Provided Binaries:** Freestanding cross-compiled layers of `i686-elf-gcc` (v7.1.0) and supporting binary utilities compiled without any local `glibc` bindings.
+* **Direct Resource Links for Verification:**
+* Windows Deployment: `https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-windows.zip`
+* Linux Deployment: `https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-linux.zip`
+
+
+
+If you wish to opt-out of the automatic downloader pipeline and manage cross-compilation tools globally or manually inside your environment, use the standard configuration paradigms below:
+
 #### Linux / Termux (Android)
+
 ```bash
 sudo apt update
 sudo apt install build-essential nasm qemu-system-x86 qemu-system-arm xorriso grub-pc-bin cimg-dev clang lld
+
 ```
+
 #### Windows (WSL2 or MSYS2)
- * **Option 1 (Recommended - WSL2 with Ubuntu):** Install WSL2 from your terminal (wsl --install), log into your Linux instance and run the native Linux setup snippet above.
- * **Option 2 (Native via MSYS2 / MinGW):** Download and extract your preferred freestanding i686-elf toolchain into a localized folder (e.g., toolchain2), append its internal bin/ directory path to your System Environment variables, or run the native setup package via MSYS2 (UCRT64):
+
+* **Option 1 (Recommended - WSL2 with Ubuntu):** Install WSL2 from your terminal (`wsl --install`), log into your Linux instance and run the native Linux setup snippet above.
+* **Option 2 (Native via MSYS2 / MinGW):** Download the specific zip package from the `i686-elf-tools` assets specified above, map its internal `/bin` directory absolute location inside your Windows Environment variables list, or trigger the compilation binaries directly via MSYS2 (UCRT64):
+
 ```bash
 pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-qemu xorriso
+
 ```
+
 ### 🏗️ Compilation & Build System
+
 LuusOS wraps its freestanding compiler flags inside portable plain-text build scripts to streamline compilation, linking phases, and target storage generation.
- 1. **Clone the repository:**
+
+1. **Clone the repository:**
+
 ```bash
 git clone [https://github.com/luispolis124/LuusOS.git](https://github.com/luispolis124/LuusOS.git)
 cd LuusOS
+
 ```
- 2. **Run the automated compilation build pipeline:**
-   * **On Linux / Termux:** Grant permissions and execute the shell deployment script:
-   ```bash
-   chmod +x build.sh
-   ./build.sh
-   
-   ```
-   * **On Windows (Command Prompt / MSYS2):** Call the native batch wrapper script:
-   ```cmd
-   build.bat
-   
-   ```
-   * *Note:* If you prefer to target specific rules inside the Makefile by yourself, just execute: make clean && make all
+
+2. **Run the automated compilation build pipeline:**
+
+* **On Linux / Termux:** Grant permissions and execute the shell deployment script:
+
+```bash
+chmod +x build.sh
+./build.sh
+
+```
+
+* **On Windows (Command Prompt / MSYS2):** Call the native batch wrapper script:
+
+```cmd
+build.bat
+
+```
+
+* *Note:* If you prefer to target specific rules inside the Makefile by yourself, just execute: `make clean && make all`
+
 ### 🕹️ Running & Emulation
+
 #### 1. Via QEMU (Linux, Windows, and Termux)
- * **Running on x86 (Standard Mode):**
+
+* **Running on x86 (Standard Mode):**
+
 ```bash
 # Testing the stable ISO image generated by the build system
 qemu-system-i386 -cdrom build/luusos.iso
 # Testing via raw Kernel binary (Multiboot)
 qemu-system-i386 -kernel build/luusos.bin
+
 ```
- * **Running on AArch64 (ARM64 Virt Mode):**
+
+* **Running on AArch64 (ARM64 Virt Mode):**
+
 ```bash
 qemu-system-aarch64 -M virt -cpu cortex-a57 -nographic -kernel target/LuusOS.bin
+
 ```
+
 #### 2. Via Limbo PC Emulator (Mobile / Android)
+
 To test LuusOS directly on an Android device using Limbo:
- 1. Move the compiled build/luusos.iso or build/luusos.bin onto your target phone storage.
- 2. Launch **Limbo PC Emulator**, spin up a new machine, and map architecture properties to **x86** (or arm64).
- 3. Inside the **Removable Drives** section, toggle **CDROM** and load your luusos.iso file (or provide it inside the **Kernel** fields if using raw standalone binaries).
- 4. Select your Video Display Interface (e.g., **std** or **vmware**) and hit the **Play** button.
+
+1. Move the compiled `build/luusos.iso` or `build/luusos.bin` onto your target phone storage.
+2. Launch **Limbo PC Emulator**, spin up a new machine, and map architecture properties to **x86** (or arm64).
+3. Inside the **Removable Drives** section, toggle **CDROM** and load your luusos.iso file (or provide it inside the **Kernel** fields if using raw standalone binaries).
+4. Select your Video Display Interface (e.g., **std** or **vmware**) and hit the **Play** button.
+
 #### 3. Via VirtualBox (Full VM Virtualization)
- 1. Ensure build/luusos.iso was successfully compiled.
- 2. Open VirtualBox and create a new Virtual Machine (Set OS Type to *Other* / *Other/Unknown*).
- 3. Open **Settings > Storage**, choose the Optical Device, and attach your local luusos.iso file.
- 4. Verify Boot Priority settings and start up the instance.
+
+1. Ensure `build/luusos.iso` was successfully compiled.
+2. Open VirtualBox and create a new Virtual Machine (Set OS Type to *Other* / *Other/Unknown*).
+3. Open **Settings > Storage**, choose the Optical Device, and attach your local luusos.iso file.
+4. Verify Boot Priority settings and start up the instance.
+
 #### 4. Flashing to a USB Drive (Bare-Metal Deployment)
+
 ```bash
 # Linux / WSL2 environments
 sudo dd if=build/luusos.iso of=/dev/sdX bs=4M && sync
+
 ```
+
+---
+
 ## 📦 🇧🇷 Download Rápido / 🇺🇸 Quick Download (Via Releases)
+
 > 💡 **Nota / Note:**
->  * **PT:** Os binários pré-compilados (.bin) e as imagens ópticas (.iso) serão disponibilizados na aba de **Releases** do GitHub assim que as primeiras builds estáveis forem publicadas. Você pode baixar os arquivos prontos diretamente por lá se preferir não compilar o código fonte localmente.
->  * **EN:** Pre-compiled standalone binaries (.bin) and bootable optical storage tags (.iso) will be published to the GitHub **Releases** section as stable milestones are established. You can fetch stable ready-to-run images directly from there if you wish to bypass local toolchain configuration.
+> * **PT:** Os binários pré-compilados (.bin) e as imagens ópticas (.iso) serão disponibilizados na aba de **Releases** do GitHub assim que as primeiras builds estáveis forem publicadas. Você pode baixar os arquivos prontos diretamente por lá se preferir não compilar o código fonte localmente.
+> * **EN:** Pre-compiled standalone binaries (.bin) and bootable optical storage tags (.iso) will be published to the GitHub **Releases** section as stable milestones are established. You can fetch stable ready-to-run images directly from there if you wish to bypass local toolchain configuration.
 > 
+> 
+
 ```bash
 # PT: Comando futuro para baixar a imagem ISO estável
 # EN: Future script to fetch the latest stable bootable ISO
@@ -182,6 +290,9 @@ curl -L -O [https://github.com/luispolis124/LuusOS/releases/latest/download/luus
 # PT: Comando futuro para capturar apenas o binário estático do Kernel
 # EN: Future script to download the bare-metal raw Kernel binary
 wget [https://github.com/luispolis124/LuusOS/releases/latest/download/luusos.bin](https://github.com/luispolis124/LuusOS/releases/latest/download/luusos.bin)
+
 ```
+
 ## 📜 License & Contributing
+
 Licensed under the **MIT License**. Feel free to study, modify, fork, and use this codebase for educational and OSDev experimentation purposes. Feedback, issue tracking, and architecture discussions are highly appreciated!
