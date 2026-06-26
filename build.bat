@@ -9,75 +9,72 @@ echo  [1] Portugues (BR)
 echo  [2] English (US)
 echo.
 choice /c 12 /n /m "Choose/Escolha (1 or 2): "
-
-if errorlevel 2 (
-    set LANG=EN
-) else if errorlevel 1 (
-    set LANG=PT
-)
+if errorlevel 2 (set LANG=EN) else (set LANG=PT)
 
 cls
 echo ============================================================
-echo   LuusOS Build System — Windows PC (w64devkit)
+echo   LuusOS Build System — Windows PC
 echo ============================================================
 echo.
 
-:: Configura os executáveis usando a estrutura do w64devkit
-:: O bin deve estar na pasta 'bin' ao lado deste script
+:: Caminhos dos executáveis (esperados na pasta bin\)
 set "BIN_DIR=%~dp0bin"
-set "CC=%BIN_DIR%\gcc.exe"
-set "AS=%BIN_DIR%\as.exe"
-set "LD=%BIN_DIR%\ld.exe"
+set "CC=%BIN_DIR%\i686-elf-gcc.exe"
+set "AS=%BIN_DIR%\i686-elf-as.exe"
+set "LD=%BIN_DIR%\i686-elf-ld.exe"
 
-:: Verificação de segurança
+:: ============================================================
+::  VERIFICAÇÃO E DOWNLOAD AUTOMÁTICO
+:: ============================================================
+if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
+
 if not exist "%CC%" (
     if "!LANG!"=="PT" (
-        echo [ERRO] O w64devkit nao foi encontrado!
-        echo O arquivo gcc.exe nao foi localizado em: %BIN_DIR%
-        echo Certifique-se de que o build.bat esta na mesma pasta que a pasta 'bin'.
+        echo [INFO] Compilador nao encontrado. Iniciando download automatico...
     ) else (
-        echo [ERROR] w64devkit not found!
-        echo The file gcc.exe was not located in: %BIN_DIR%
-        echo Make sure build.bat is in the same directory as the 'bin' folder.
+        echo [INFO] Compiler not found. Starting automated download...
     )
-    echo.
-    pause
-    exit /b 1
+    
+    if not exist toolchain_tmp mkdir toolchain_tmp
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-windows.zip' -OutFile 'toolchain_tmp\toolchain.zip'"
+    
+    if exist toolchain_tmp\toolchain.zip (
+        powershell -Command "Expand-Archive -Path 'toolchain_tmp\toolchain.zip' -DestinationPath 'bin\' -Force"
+        rmdir /s /q toolchain_tmp
+    ) else (
+        echo [ERRO] Falha no download. Verifique sua conexao.
+        pause & exit /b 1
+    )
 )
 
 :setup_menu
-:: Menu Interativo de Seleção de Alvo
+:: Menu Interativo
 if "!LANG!"=="PT" (
-    echo Escolha o tipo de compilacao desejado:
+    echo Escolha o tipo de compilacao:
     echo  [1] Apenas Kernel (luusos.bin)
-    echo  [2] Kernel + Imagem Optica (luusos.iso)
+    echo  [2] Kernel + Imagem ISO
     echo.
-    choice /c 12 /n /m "Digite a opcao desejada (1 ou 2): "
+    choice /c 12 /n /m "Opcao (1 ou 2): "
 ) else (
-    echo Choose the desired build target:
+    echo Choose build target:
     echo  [1] Kernel Only (luusos.bin)
-    echo  [2] Kernel + Optical Image (luusos.iso)
+    echo  [2] Kernel + ISO Image
     echo.
-    choice /c 12 /n /m "Enter your choice (1 or 2): "
+    choice /c 12 /n /m "Choice (1 or 2): "
 )
 
-if errorlevel 2 (
-    set TARGET=iso
-) else if errorlevel 1 (
-    set TARGET=bin
-)
+set TARGET=bin
+if errorlevel 2 set TARGET=iso
 
 echo.
 echo ============================================================
-if "!LANG!"=="PT" (echo [INFO] Alvo selecionado: !TARGET!) else (echo [INFO] Selected target: !TARGET!)
+echo [INFO] Alvo selecionado: !TARGET!
 echo ============================================================
 echo.
 
 :: ============================================================
-::  PASSO 1 — Compilação dos Módulos
+::  COMPILAÇÃO
 :: ============================================================
-if "!LANG!"=="PT" (echo [1/2] Compilando arquivos de codigo-fonte...) else (echo [1/2] Compiling source files...)
-
 call :compile src/boot.s boot.o -c
 call :compile src/gdt_flush.s gdt_flush.o -c
 call :compile src/isr.s isr.o -c
@@ -91,65 +88,41 @@ call :compile src/sound.c sound.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu9
 call :compile src/timer.c timer.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
 
 :: ============================================================
-::  PASSO 2 — Linkagem do Executável do Kernel
+::  LINKAGEM
 :: ============================================================
-echo.
-if "!LANG!"=="PT" (echo [2/2] Linkando objetos no binario estavel luusos.bin...) else (echo [2/2] Linking objects into stable luusos.bin...)
 "%LD%" -m elf_i386 -T linker.ld -o luusos.bin boot.o gdt_flush.o isr.o gdt.o idt.o kernel.o keyboard.o string.o shell.o sound.o timer.o
 if errorlevel 1 goto :error
 
-if "!LANG!"=="PT" (echo [OK] Kernel luusos.bin gerado com sucesso!) else (echo [OK] Kernel luusos.bin successfully generated!)
-
-:: ============================================================
-::  GERAÇÃO DA ISO (SE SELECIONADA)
-:: ============================================================
 if /i "%TARGET%"=="iso" goto :make_iso
 goto :done
 
 :: ============================================================
-::  FUNÇÕES AUXILIARES
+::  FUNÇÕES
 :: ============================================================
 :compile
 if "%~2"=="boot.o" (set "CMD="%AS%" --32") else if "%~2"=="gdt_flush.o" (set "CMD="%AS%" --32") else if "%~2"=="isr.o" (set "CMD="%AS%" --32") else (set "CMD="%CC%" -m32")
-if "!LANG!"=="PT" (echo    Compilando %~1...) else (echo    Compiling %~1...)
+echo    Compilando %~1...
 %CMD% %~3 %~1 -o %~2
 if errorlevel 1 goto :error
 exit /b
 
 :make_iso
-echo.
-if "!LANG!"=="PT" (echo [ISO] Verificando ferramentas de geracao de imagem...) else (echo [ISO] Checking image generation tools...)
 where grub-mkrescue >nul 2>&1
-if errorlevel 1 (
-    if "!LANG!"=="PT" (
-        echo [INFO] 'grub-mkrescue' nao encontrado no PATH. Pulando geracao da ISO.
-    ) else (
-        echo [INFO] 'grub-mkrescue' not found. Skipping ISO generation.
-    )
-    goto :done
-)
+if errorlevel 1 (echo [AVISO] grub-mkrescue nao encontrado. & goto :done)
 if exist isodir rmdir /s /q isodir
 mkdir isodir\boot\grub
 copy /y luusos.bin isodir\boot\luusos.bin >nul
-copy /y grub.cfg   isodir\boot\grub\grub.cfg >nul
+copy /y grub.cfg isodir\boot\grub\grub.cfg >nul
 grub-mkrescue -o luusos.iso isodir >nul 2>&1
-if "!LANG!"=="PT" (echo [OK] Imagem bootavel luusos.iso gerada com sucesso!) else (echo [OK] Bootable image luusos.iso successfully generated!)
+echo [OK] luusos.iso gerada.
 if exist isodir rmdir /s /q isodir
 goto :done
 
 :done
 del *.o >nul 2>&1
-echo.
-echo ============================================================
-if "!LANG!"=="PT" (echo   Build finalizado!) else (echo   Build complete!)
-echo ============================================================
-echo.
-pause
-exit /b 0
+echo Build concluído com sucesso!
+pause & exit /b 0
 
 :error
-echo.
-if "!LANG!"=="PT" (echo [ERRO] Ocorreu uma falha durante o processo de compilacao.) else (echo [ERROR] A failure occurred during the compilation process.)
-echo.
-pause
-exit /b 1
+echo [ERRO] Falha no processo.
+pause & exit /b 1
