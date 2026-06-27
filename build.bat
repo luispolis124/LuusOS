@@ -24,24 +24,36 @@ set "AS=%BIN_DIR%\i686-elf-as.exe"
 set "LD=%BIN_DIR%\i686-elf-ld.exe"
 
 :: ============================================================
-::  VERIFICAÇÃO E DOWNLOAD AUTOMÁTICO
+::  VERIFICAÇÃO DE TOOLCHAIN (DOWNLOAD ÚNICO)
 :: ============================================================
 if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
 
+:: Verifica se o compilador já existe. Se existir, pula todo o bloco de download.
 if not exist "%CC%" (
-    if "!LANG!"=="PT" (echo [INFO] Compilador nao encontrado. Iniciando download...) else (echo [INFO] Compiler not found. Starting download...)
+    if "!LANG!"=="PT" (echo [INFO] Compilador nao encontrado. Iniciando download unico...) else (echo [INFO] Compiler not found. Starting one-time download...)
     
     if not exist toolchain_tmp mkdir toolchain_tmp
+    
+    :: Download
     powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/lordmilko/i686-elf-tools/releases/download/7.1.0/i686-elf-tools-windows.zip' -OutFile 'toolchain_tmp\toolchain.zip'"
     
     if exist toolchain_tmp\toolchain.zip (
-        powershell -Command "Expand-Archive -Path 'toolchain_tmp\toolchain.zip' -DestinationPath 'bin\' -Force"
+        :: Extrai e organiza na pasta bin
+        powershell -Command "Expand-Archive -Path 'toolchain_tmp\toolchain.zip' -DestinationPath 'toolchain_tmp\extracted' -Force"
+        xcopy /s /y "toolchain_tmp\extracted\*" "%BIN_DIR%\" >nul
         rmdir /s /q toolchain_tmp
+        echo [OK] Ferramentas instaladas com sucesso.
     ) else (
-        echo [ERRO] Falha no download.
+        echo [ERRO] Falha no download. Verifique a conexao.
         pause & exit /b 1
     )
+) else (
+    echo [INFO] Toolchain ja instalada. Pulando download.
 )
+
+:: ============================================================
+::  MENU E COMPILAÇÃO (Restante do script mantido)
+:: ============================================================
 
 :setup_menu
 if "!LANG!"=="PT" (
@@ -67,9 +79,6 @@ echo [INFO] Alvo selecionado: !TARGET!
 echo ============================================================
 echo.
 
-:: ============================================================
-::  COMPILAÇÃO
-:: ============================================================
 call :compile src/boot.s boot.o -c
 call :compile src/gdt_flush.s gdt_flush.o -c
 call :compile src/isr.s isr.o -c
@@ -82,18 +91,12 @@ call :compile src/shell.c shell.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu9
 call :compile src/sound.c sound.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
 call :compile src/timer.c timer.o "-c -ffreestanding -O2 -Wall -Wextra -std=gnu99"
 
-:: ============================================================
-::  LINKAGEM
-:: ============================================================
 "%LD%" -m elf_i386 -T linker.ld -o luusos.bin boot.o gdt_flush.o isr.o gdt.o idt.o kernel.o keyboard.o string.o shell.o sound.o timer.o
 if errorlevel 1 goto :error
 
 if /i "%TARGET%"=="iso" goto :make_iso
 goto :done
 
-:: ============================================================
-::  FUNÇÃO COMPILE CORRIGIDA
-:: ============================================================
 :compile
 if "%~2"=="boot.o" (set "CMD=%AS% --32") else if "%~2"=="gdt_flush.o" (set "CMD=%AS% --32") else if "%~2"=="isr.o" (set "CMD=%AS% --32") else (set "CMD=%CC% -m32")
 echo    Compilando %~1...
